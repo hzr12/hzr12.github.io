@@ -55,7 +55,7 @@
                 // const inputHash = CryptoJS.MD5(inputFlag).toString();
 
                 // 5. 执行校验逻辑
-                const isValid = md5Store.has(inputHash);
+                const isValid = md5Store.has(inputFlag);
                 
                 // 6. 显示校验结果
                 resultDiv.className = isValid ? 'valid' : 'invalid';
