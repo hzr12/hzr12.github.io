@@ -52,7 +52,7 @@
                 });
 
                 // 4. 计算输入FLAG的MD5值
-                const inputHash = CryptoJS.MD5(inputFlag).toString();
+                // const inputHash = CryptoJS.MD5(inputFlag).toString();
 
                 // 5. 执行校验逻辑
                 const isValid = md5Store.has(inputHash);
@@ -61,7 +61,7 @@
                 resultDiv.className = isValid ? 'valid' : 'invalid';
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = isValid 
-                    ? `✅ 校验成功：${inputFlag} (MD5: ${raw})`
+                    ? `✅ 校验成功：${inputFlag} (MD5: ${rawLines})`
                     : `❌ 校验失败：${inputFlag}`;
 
             } catch (error) {
