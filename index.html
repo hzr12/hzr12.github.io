@@ -48,7 +48,7 @@
                 const md5Store = new Set();
                 rawLines.forEach(raw => {
                     const hash = CryptoJS.MD5(raw).toString();
-                        md5Store.add(raw,hash);
+                        md5Store.add(hash);
                 });
 
                 // 4. 计算输入FLAG的MD5值
@@ -61,7 +61,7 @@
                 resultDiv.className = isValid ? 'valid' : 'invalid';
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = isValid 
-                    ? `✅ 校验成功：${inputFlag})`
+                    ? `✅ 校验成功：${inputFlag}`
                     : `❌ 校验失败：${inputFlag}`;
 
             } catch (error) {
