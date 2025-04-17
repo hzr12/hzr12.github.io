@@ -61,7 +61,7 @@
                 resultDiv.className = isValid ? 'valid' : 'invalid';
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = isValid 
-                    ? `✅ 校验成功：${inputFlag} (MD5: ${inputHash})`
+                    ? `✅ 校验成功：${inputFlag} (MD5: ${raw})`
                     : `❌ 校验失败：${inputFlag}`;
 
             } catch (error) {
