@@ -6,40 +6,12 @@
     <!-- 引入CryptoJS库 -->
     <script src="/crypto-js.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        input[type="text"] {
-            width: 70%;
-            padding: 10px;
-            margin-right: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-            display: none;
-        }
+        /* 样式保持不变 */
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input[type="text"] { width: 70%; padding: 10px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
         .valid { background-color: #dff0d8; color: #3c763d; }
         .invalid { background-color: #f2dede; color: #a94442; }
     </style>
@@ -54,43 +26,43 @@
 
     <script>
         async function checkFlag() {
-            const flagInput = document.getElementById('flagInput').value.trim();
+            const inputFlag = document.getElementById('flagInput').value.trim();
             const resultDiv = document.getElementById('result');
             
-            if (!flagInput) {
+            if (!inputFlag) {
                 alert('请输入要校验的FLAG内容！');
                 return;
             }
 
             try {
-                // 获取原始FLAG文件内容
+                // 1. 获取原始FLAG文件内容
                 const response = await fetch('/FLAG.txt');
                 if (!response.ok) throw new Error('无法获取FLAG文件');
 
-                const fileContent = await response.text();
-                const originalLines = fileContent.split('\n');
-                
-                // 计算输入FLAG的MD5值
-                const inputMd5 = CryptoJS.MD5(flagInput).toString();
+                // 2. 处理原始FLAG数据
+                const rawLines = await response.text().then(text => 
+                    text.split('\n').map(line => line.trim()).filter(Boolean)
+                );
 
-                // 预处理原始FLAG的MD5集合
-                const md5Map = new Set();
-                originalLines.forEach(line => {
-                    const trimmed = line.trim();
-                    if (trimmed) {
-                        md5Map.add(CryptoJS.MD5(trimmed).toString());
-                    }
+                // 3. 生成原始FLAG的MD5集合
+                const md5Store = new Set();
+                rawLines.forEach(raw => {
+                    const hash = CryptoJS.MD5(raw).toString();
+                    md5Store.add(hash);
                 });
 
-                // 执行校验
-                const isValid = md5Map.has(inputMd5);
+                // 4. 计算输入FLAG的MD5值
+                const inputHash = CryptoJS.MD5(inputFlag).toString();
+
+                // 5. 执行校验逻辑
+                const isValid = md5Store.has(inputHash);
                 
-                // 显示结果
+                // 6. 显示校验结果
                 resultDiv.className = isValid ? 'valid' : 'invalid';
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = isValid 
-                    ? `✅ FLAG有效：${flagInput} (MD5: ${trimmed})`
-                    : `❌ FLAG无效：${flagInput}`;
+                    ? `✅ 校验成功：${inputFlag} (MD5: ${inputHash})`
+                    : `❌ 校验失败：${inputFlag}`;
 
             } catch (error) {
                 console.error('校验出错:', error);
