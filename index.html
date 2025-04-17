@@ -89,7 +89,7 @@
                 resultDiv.className = isValid ? 'valid' : 'invalid';
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = isValid 
-                    ? `✅ FLAG有效：${flagInput} (MD5: ${inputMd5})`
+                    ? `✅ FLAG有效：${flagInput} (MD5: ${trimmed})`
                     : `❌ FLAG无效：${flagInput}`;
 
             } catch (error) {
