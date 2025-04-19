@@ -48,15 +48,14 @@
                 const md5Store = new Set();
                 rawLines.forEach(raw => {
                     const hash = CryptoJS.MD5(raw).toString();
-                    const hash_2 = CryptoJS.MD5(hash).toString();
-                    md5Store.add(hash_2);
+                    md5Store.add(hash);
                 });
 
                 // 4. 计算输入FLAG的MD5值
-                const inputHash = CryptoJS.MD5(inputFlag).toString();
+                // const inputHash = CryptoJS.MD5(inputFlag).toString();
 
                 // 5. 执行校验逻辑
-                const isValid = md5Store.has(inputHash);
+                const isValid = md5Store.has(inputFlag);
                 
                 // 6. 显示校验结果
                 resultDiv.className = isValid ? 'valid' : 'invalid';
