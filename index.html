@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>仿图演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #e6f3ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .cartoon {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 20px auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #000;
+            font-size: 36px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        input {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 25px;
+            width: 250px;
+            outline: none;
+        }
+
+        button {
+            background-color: #1e90ff;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background-color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 替换成你的实际图片路径 -->
+        <h1>崩坏3</h1>
+        <img src="/images/真我.png", style="width: 35%; height: auto;">
+
+        <div class="input-group">
+            <input type="text" placeholder="请输入">
+            <button onclick="checkAnswer()">提交</button>
+        </div>
+    </div>
+
+    <script>
+        function checkAnswer() {
+            const answer = document.querySelector('input').value;
+            if(answer.toLowerCase() === '爱莉希雅') {
+                alert('正确Flag：123');
+            } else {
+                alert('答案错误，请继续加油');
+            }
+        }
+    </script>
+</body>
+</html>
