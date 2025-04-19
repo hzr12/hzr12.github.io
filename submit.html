@@ -48,8 +48,8 @@
                 const md5Store = new Set();
                 rawLines.forEach(raw => {
                     const hash = CryptoJS.MD5(raw).toString();
-                    const hash = CryptoJS.MD5(hash).toString();
-                    md5Store.add(hash);
+                    const hash_2 = CryptoJS.MD5(hash).toString();
+                    md5Store.add(hash_2);
                 });
 
                 // 4. 计算输入FLAG的MD5值
