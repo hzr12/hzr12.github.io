@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>FLAG校验工具</title>
     <!-- 引入CryptoJS库 -->
-    <script src="/crypto-js.min.js"></script>
+    <script src="/js/crypto-js.min.js"></script>
     <style>
         /* 样式保持不变 */
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background-color: #f5f5f5; }
@@ -48,14 +48,15 @@
                 const md5Store = new Set();
                 rawLines.forEach(raw => {
                     const hash = CryptoJS.MD5(raw).toString();
-                        md5Store.add(hash);
+                    const hash = CryptoJS.MD5(hash).toString();
+                    md5Store.add(hash);
                 });
 
                 // 4. 计算输入FLAG的MD5值
-                // const inputHash = CryptoJS.MD5(inputFlag).toString();
+                const inputHash = CryptoJS.MD5(inputFlag).toString();
 
                 // 5. 执行校验逻辑
-                const isValid = md5Store.has(inputFlag);
+                const isValid = md5Store.has(inputHash);
                 
                 // 6. 显示校验结果
                 resultDiv.className = isValid ? 'valid' : 'invalid';
