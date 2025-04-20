@@ -71,6 +71,16 @@
         button:hover {
             background-color: #0066cc;
         }
+
+        .flag-code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -81,6 +91,11 @@
             <input type="text" placeholder="请输入">
             <button onclick="checkAnswer()">提交</button>
         </div>
+
+        <div id="flagContainer" class="flag-display hidden">
+            <div class="flag-code" id="flagContent"></div>
+        </div>
+
         <div class="button-group">
             <button class="next-btn hidden"  id="nextLevelBtn" onclick="goNext()">下一关</button>
         </div>
@@ -91,10 +106,14 @@
             const answer = document.querySelector('input').value;
             const nextBtn = document.getElementById('nextLevelBtn');
             if(answer.toLowerCase() === '真我') {
-                alert('正确Flag：17029318e8be515c846a8c56e31f92da');
+                flagContent.textContent = '正确Flag：17029318e8be515c846a8c56e31f92da';
+                flagContainer.classList.remove('hidden');
+                flagContainer.classList.add('visible');
                 nextBtn.classList.remove('hidden');
             } else {
-                alert('答案错误，请继续加油');
+                flagContent.textContent = '答案错误，请继续加油';
+                flagContainer.classList.remove('hidden');
+                flagContainer.classList.add('visible');
             }
         }
         function goNext() {
