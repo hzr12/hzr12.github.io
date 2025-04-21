@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Flag挑战</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #e6f3ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+
+        h1 {
+            color: #000;
+            font-size: 36px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        input {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 25px;
+            width: 250px;
+            outline: none;
+        }
+
+        button {
+            background-color: #1e90ff;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-left: 10px;
+        }
+
+        .next-btn {
+            background-color: #4CAF50; /* 绿色主题 */
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-left: 10px;
+            margin-top: 15px;
+        }
+
+        .hidden {
+        display: none;
+        }
+
+        button:hover {
+            background-color: #0066cc;
+        }
+
+        .flag-code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/images/空梦.png", style="width: 35%; height: auto;">
+
+        <div class="input-group">
+            <input type="text" placeholder="请输入">
+            <button onclick="checkAnswer()">提交</button>
+        </div>
+
+        <div id="flagContainer" class="flag-display hidden">
+            <div class="flag-code" id="flagContent"></div>
+        </div>
+
+        <div class="button-group">
+            <button class="next-btn hidden"  id="nextLevelBtn" onclick="goNext()">下一关</button>
+        </div>
+    </div>
+
+    <script>
+        function checkAnswer() {
+            const answer = document.querySelector('input').value;
+            const nextBtn = document.getElementById('nextLevelBtn');
+            if(answer.toLowerCase() === '空梦') {
+                flagContent.textContent = '正确Flag：f0f8c0474ff22eb748f4bc62087c72c7';
+                flagContainer.classList.remove('hidden');
+                flagContainer.classList.add('visible');
+                nextBtn.classList.remove('hidden');
+            } else {
+                flagContent.textContent = '答案错误，请继续加油';
+                flagContainer.classList.remove('hidden');
+                flagContainer.classList.add('visible');
+            }
+        }
+        function goNext() {
+            // 跳转到下一关
+            window.location.href = "index2.html";
+        }
+    </script>
+</body>
+</html>
