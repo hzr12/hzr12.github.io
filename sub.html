@@ -2,195 +2,232 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>FLAG校验工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业FLAG校验工具</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4CAF50;
-            --success-color: #dff0d8;
-            --success-text: #3c763d;
-            --error-color: #f2dede;
-            --error-text: #a94442;
-            --warning-color: #fcf8e3;
-            --warning-text: #8a6d3b;
-            --history-bg: #f8f9fa;
-            --history-border: #dee2e6;
+            --primary: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --gray: #95a5a6;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
         }
         
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
             min-height: 100vh;
-            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
+            color: #333;
         }
         
         .container {
-            background-color: white;
             width: 100%;
-            max-width: 800px;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            transition: transform 0.3s ease;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
         }
         
-        .container:hover {
-            transform: translateY(-5px);
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-header {
+            background: var(--dark);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .card-body {
+            padding: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
         }
         
         h2 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            font-size: 2.2rem;
-            position: relative;
-            padding-bottom: 15px;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
         }
         
-        h2::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 4px;
-            background: linear-gradient(to right, var(--primary-color), #2196F3);
-            border-radius: 2px;
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .description {
+            color: var(--gray);
+            margin-bottom: 30px;
+            line-height: 1.6;
+            text-align: center;
         }
         
         .input-group {
             display: flex;
             margin-bottom: 25px;
-            gap: 10px;
+            border-radius: 50px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
-        input[type="text"] {
+        input {
             flex: 1;
-            padding: 14px 20px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 18px 25px;
+            border: none;
+            background: var(--light);
             font-size: 1.1rem;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        
-        input[type="text"]:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
             outline: none;
         }
         
         button {
-            padding: 14px 25px;
-            background: linear-gradient(to right, var(--primary-color), #45a049);
+            padding: 18px 35px;
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 8px;
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
+            transition: var(--transition);
         }
         
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(76, 175, 80, 0.3);
+            background: #2980b9;
         }
         
-        button:active {
-            transform: translateY(1px);
+        button i {
+            margin-right: 8px;
         }
         
         #result {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 8px;
+            padding: 25px;
+            border-radius: 15px;
             display: none;
-            font-size: 1.1rem;
             text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
             animation: fadeIn 0.5s ease;
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
+            from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
         .valid {
-            background-color: var(--success-color);
-            color: var(--success-text);
-            border-left: 5px solid var(--success-text);
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+            border-left: 5px solid var(--success);
         }
         
         .invalid {
-            background-color: var(--error-color);
-            color: var(--error-text);
-            border-left: 5px solid var(--error-text);
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--danger);
+            border-left: 5px solid var(--danger);
         }
         
-        /* 历史记录样式 */
+        .warning {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--warning);
+            border-left: 5px solid var(--warning);
+        }
+        
         .history-section {
-            margin-top: 40px;
-            border-top: 1px solid #eee;
-            padding-top: 30px;
-        }
-        
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            margin-top: 20px;
         }
         
         .history-controls {
             display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
             gap: 10px;
         }
         
-        .history-btn {
-            padding: 8px 15px;
-            background: #f1f1f1;
-            color: #555;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .history-btn:hover {
-            background: #e9ecef;
-        }
-        
-        .history-clear {
-            background: #e74c3c;
-            color: white;
+        .filter-btn {
+            padding: 10px 20px;
+            border-radius: 50px;
+            background: var(--light);
             border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
-        .history-clear:hover {
-            background: #c0392b;
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .history-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .history-list::-webkit-scrollbar-track {
+            background: var(--light);
+            border-radius: 10px;
+        }
+        
+        .history-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
         }
         
         .history-item {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border-left: 4px solid;
             animation: slideIn 0.3s ease;
         }
         
@@ -199,149 +236,241 @@
             to { opacity: 1; transform: translateX(0); }
         }
         
-        .history-item.valid-item {
-            border-left-color: var(--success-text);
+        .history-item.valid {
+            border-left-color: var(--success);
         }
         
-        .history-item.invalid-item {
-            border-left-color: var(--error-text);
+        .history-item.invalid {
+            border-left-color: var(--danger);
         }
         
         .history-content {
-            flex-grow: 1;
-            margin-right: 15px;
+            flex: 1;
         }
         
-        .flag-value {
+        .history-flag {
             font-weight: 600;
             margin-bottom: 5px;
             word-break: break-all;
         }
         
-        .flag-raw {
+        .history-raw {
             font-size: 0.95rem;
-            color: #666;
-            margin-top: 5px;
+            color: var(--gray);
             font-style: italic;
         }
         
-        .timestamp {
-            color: #888;
-            font-size: 0.85rem;
-            white-space: nowrap;
+        .history-status {
+            font-weight: 600;
+            margin: 5px 0;
+        }
+        
+        .history-time {
+            color: var(--gray);
+            font-size: 0.9rem;
         }
         
         .empty-history {
             text-align: center;
             padding: 30px;
-            color: #777;
+            color: var(--gray);
             font-style: italic;
-            background: #f9f9f9;
-            border-radius: 8px;
         }
         
-        .filter-options {
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+        
+        .valid-stat {
+            color: var(--success);
+        }
+        
+        .invalid-stat {
+            color: var(--danger);
+        }
+        
+        .total-stat {
+            color: var(--primary);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(52, 152, 219, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .how-it-works {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(236, 240, 241, 0.5);
+            border-radius: 15px;
+        }
+        
+        .steps {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            justify-content: space-between;
+            margin-top: 20px;
             flex-wrap: wrap;
+            gap: 15px;
         }
         
-        .filter-btn {
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            background: #f1f1f1;
-            border: 1px solid #ddd;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-        
-        .filter-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-        
-        .search-box {
-            display: flex;
-            margin-top: 15px;
-        }
-        
-        .search-box input {
+        .step {
             flex: 1;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px 0 0 6px;
+            min-width: 200px;
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         }
         
-        .search-box button {
-            padding: 10px 15px;
-            border-radius: 0 6px 6px 0;
-            font-size: 0.9rem;
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin: 0 auto 15px;
         }
         
-        @media (max-width: 600px) {
-            .input-group {
-                flex-direction: column;
-            }
-            
-            .history-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .timestamp {
-                align-self: flex-end;
-                margin-top: 10px;
-            }
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>FLAG校验工具</h2>
-        
-        <div class="input-group">
-            <input type="text" id="flagInput" placeholder="请输入要校验的FLAG值...">
-            <button onclick="checkFlag()">校验FLAG</button>
-        </div>
-        
-        <div id="result"></div>
-        
-        <div class="history-section">
-            <div class="history-header">
-                <h3>校验历史记录</h3>
-                <div class="history-controls">
-                    <button class="history-btn" onclick="toggleHistory()">隐藏历史记录</button>
-                    <button class="history-btn history-clear" onclick="clearHistory()">清空历史</button>
+        <div class="card">
+            <div class="card-header">
+                <h1><i class="fas fa-flag"></i> FLAG校验工具</h1>
+                <p class="description">安全地校验您的FLAG值，支持MD5校验和详细历史记录</p>
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" id="flagInput" placeholder="请输入要校验的FLAG值...">
+                    <button onclick="checkFlag()"><i class="fas fa-check-circle"></i> 校验FLAG</button>
+                </div>
+                
+                <div id="result"></div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在校验FLAG，请稍候...</p>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value valid-stat" id="validCount">0</div>
+                        <div class="stat-label">校验成功</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value invalid-stat" id="invalidCount">0</div>
+                        <div class="stat-label">校验失败</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value total-stat" id="totalCount">0</div>
+                        <div class="stat-label">总校验次数</div>
+                    </div>
+                </div>
+                
+                <div class="how-it-works">
+                    <h3><i class="fas fa-cogs"></i> 工作原理</h3>
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-title">获取FLAG原文</div>
+                            <p>从服务器获取Flag.txt文件中的原始FLAG值</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-title">计算MD5</div>
+                            <p>为每个原始FLAG值计算MD5哈希值</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-title">进行匹配</div>
+                            <p>将用户输入的MD5与计算的哈希值进行匹配</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="filter-options">
-                <div class="filter-btn active" data-filter="all">全部</div>
-                <div class="filter-btn" data-filter="valid">校验成功</div>
-                <div class="filter-btn" data-filter="invalid">校验失败</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-history"></i> 校验历史记录</h2>
             </div>
-            
-            <div class="search-box">
-                <input type="text" id="historySearch" placeholder="搜索历史记录...">
-                <button onclick="filterHistory()">搜索</button>
+            <div class="card-body">
+                <div class="history-section">
+                    <div class="history-controls">
+                        <div>
+                            <button class="filter-btn active" data-filter="all"><i class="fas fa-list"></i> 全部</button>
+                            <button class="filter-btn" data-filter="valid"><i class="fas fa-check-circle"></i> 成功</button>
+                            <button class="filter-btn" data-filter="invalid"><i class="fas fa-times-circle"></i> 失败</button>
+                        </div>
+                        <button class="filter-btn" onclick="clearHistory()"><i class="fas fa-trash"></i> 清空历史</button>
+                    </div>
+                    
+                    <div class="history-list" id="historyList">
+                        <div class="empty-history">暂无历史记录</div>
+                    </div>
+                </div>
             </div>
-            
-            <div id="history"></div>
         </div>
     </div>
 
     <script>
-        // 初始化历史记录
+        // 初始化
         const HISTORY_KEY = 'flagVerificationHistory';
-        const MAX_HISTORY = 50;
-        let historyVisible = true;
-
-        // 页面加载时自动显示历史记录
+        let flagData = [];
+        
+        // 页面加载时
         window.onload = function() {
             loadHistory();
+            attachEventListeners();
+            loadStats();
             
             // 添加回车键支持
             document.getElementById('flagInput').addEventListener('keypress', function(e) {
@@ -349,120 +478,88 @@
                     checkFlag();
                 }
             });
-            
-            // 添加筛选事件
-            document.querySelectorAll('.filter-btn').forEach(btn => {
+        };
+        
+        // 附加事件监听器
+        function attachEventListeners() {
+            // 筛选按钮事件
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.filter-btn[data-filter]').forEach(b => {
+                        b.classList.remove('active');
+                    });
                     this.classList.add('active');
                     loadHistory();
                 });
             });
+        }
+        
+        // 加载统计信息
+        function loadStats() {
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || [];
             
-            // 添加搜索框回车支持
-            document.getElementById('historySearch').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    filterHistory();
-                }
-            });
-        };
-
+            const validCount = history.filter(item => item.isValid).length;
+            const invalidCount = history.filter(item => !item.isValid).length;
+            
+            document.getElementById('validCount').textContent = validCount;
+            document.getElementById('invalidCount').textContent = invalidCount;
+            document.getElementById('totalCount').textContent = history.length;
+        }
+        
         // 加载历史记录
         function loadHistory() {
-            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || [];
-            const historyDiv = document.getElementById('history');
-            const filter = document.querySelector('.filter-btn.active').dataset.filter;
-            const searchTerm = document.getElementById('historySearch').value.toLowerCase();
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+            const historyList = document.getElementById('historyList');
+            const filter = document.querySelector('.filter-btn[data-filter].active')?.dataset.filter || 'all';
             
             // 清空现有内容
-            historyDiv.innerHTML = '';
-
+            historyList.innerHTML = '';
+            
             if (history.length === 0) {
-                historyDiv.innerHTML = '<div class="empty-history">暂无历史记录</div>';
+                historyList.innerHTML = '<div class="empty-history">暂无历史记录</div>';
                 return;
             }
-
-            // 创建历史记录列表
-            let hasItems = false;
             
             // 按时间倒序排列
             history.sort((a, b) => b.time - a.time);
             
-            history.forEach(item => {
-                // 应用筛选条件
-                if (filter !== 'all') {
-                    if (filter === 'valid' && !item.isValid) return;
-                    if (filter === 'invalid' && item.isValid) return;
-                }
-                
-                // 应用搜索条件
-                if (searchTerm) {
-                    const flagMatch = item.flag.toLowerCase().includes(searchTerm);
-                    const rawMatch = item.flagRaw?.toLowerCase().includes(searchTerm) || false;
-                    if (!flagMatch && !rawMatch) return;
-                }
-                
-                hasItems = true;
-                
+            // 应用筛选
+            const filteredHistory = history.filter(item => {
+                if (filter === 'all') return true;
+                if (filter === 'valid') return item.isValid;
+                if (filter === 'invalid') return !item.isValid;
+                return true;
+            });
+            
+            if (filteredHistory.length === 0) {
+                historyList.innerHTML = '<div class="empty-history">没有匹配的历史记录</div>';
+                return;
+            }
+            
+            // 添加历史记录项
+            filteredHistory.forEach(item => {
                 const historyItem = document.createElement('div');
-                historyItem.className = `history-item ${item.isValid ? 'valid-item' : 'invalid-item'}`;
+                historyItem.className = `history-item ${item.isValid ? 'valid' : 'invalid'}`;
                 
                 historyItem.innerHTML = `
                     <div class="history-content">
-                        <div class="flag-value">${item.flag}</div>
-                        <div class="result-badge">${item.isValid ? '✅ 校验成功' : '❌ 校验失败'}</div>
-                        ${item.flagRaw ? `<div class="flag-raw">原始值: ${item.flagRaw}</div>` : ''}
+                        <div class="history-flag">${item.flag}</div>
+                        <div class="history-status">${item.isValid ? '✅ 校验成功' : '❌ 校验失败'}</div>
+                        ${item.flagRaw ? `<div class="history-raw">原始值: ${item.flagRaw}</div>` : ''}
                     </div>
-                    <div class="timestamp">${formatTime(item.time)}</div>
+                    <div class="history-time">${formatTime(item.time)}</div>
                 `;
                 
-                historyDiv.appendChild(historyItem);
+                historyList.appendChild(historyItem);
             });
-            
-            if (!hasItems) {
-                historyDiv.innerHTML = '<div class="empty-history">没有匹配的历史记录</div>';
-            }
-        }
-        
-        // 搜索历史记录
-        function filterHistory() {
-            loadHistory();
-        }
-        
-        // 切换历史记录显示
-        function toggleHistory() {
-            const historySection = document.querySelector('.history-section');
-            const toggleBtn = document.querySelector('.history-controls .history-btn');
-            
-            if (historyVisible) {
-                historySection.style.display = 'none';
-                toggleBtn.textContent = '显示历史记录';
-                historyVisible = false;
-            } else {
-                historySection.style.display = 'block';
-                toggleBtn.textContent = '隐藏历史记录';
-                historyVisible = true;
-            }
-        }
-        
-        // 清空历史记录
-        function clearHistory() {
-            if (confirm('确定要清空所有历史记录吗？此操作不可撤销。')) {
-                localStorage.removeItem(HISTORY_KEY);
-                loadHistory();
-            }
-        }
-        
-        // 格式化时间
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
         // 校验FLAG
         async function checkFlag() {
             const inputFlag = document.getElementById('flagInput').value.trim();
             const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            
             resultDiv.style.display = 'none';
             
             if (!inputFlag) {
@@ -470,13 +567,18 @@
                 return;
             }
             
+            // 显示加载状态
+            loadingDiv.style.display = 'block';
+            
             try {
-                // 模拟从服务器获取FLAG文件
-                const response = await fetchMockFlagData();
+                // 获取FLAG数据
+                if (flagData.length === 0) {
+                    await fetchFlagData();
+                }
                 
                 // 创建MD5映射
                 const md5Store = new Map();
-                response.forEach(raw => {
+                flagData.forEach(raw => {
                     md5Store.set(CryptoJS.MD5(raw).toString(), raw);
                 });
                 
@@ -485,9 +587,19 @@
                 
                 // 显示校验结果
                 if (isValid) {
-                    showResult('valid', `✅ 校验成功：${inputFlag}<br>对应值：${flagRaw}`);
+                    showResult('valid', `
+                        <i class="fas fa-check-circle fa-2x"></i>
+                        <h3>✅ FLAG校验成功</h3>
+                        <p>FLAG值: ${inputFlag}</p>
+                        <p>原始值: ${flagRaw}</p>
+                    `);
                 } else {
-                    showResult('invalid', `❌ 校验失败：${inputFlag}`);
+                    showResult('invalid', `
+                        <i class="fas fa-times-circle fa-2x"></i>
+                        <h3>❌ FLAG校验失败</h3>
+                        <p>输入的FLAG值: ${inputFlag}</p>
+                        <p>未在系统中找到匹配项</p>
+                    `);
                 }
                 
                 // 保存历史记录
@@ -498,7 +610,42 @@
                 
             } catch (error) {
                 console.error('校验出错:', error);
-                showResult('error', `❌ 校验失败：${error.message}`);
+                showResult('invalid', `
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    <h3>❌ 校验失败</h3>
+                    <p>${error.message}</p>
+                `);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+        
+        // 获取FLAG数据
+        async function fetchFlagData() {
+            try {
+                // 在实际应用中，这里应该替换为真实的API端点
+                // const response = await fetch('/Flag/Flag.txt');
+                // if (!response.ok) throw new Error('无法获取FLAG文件');
+                // const text = await response.text();
+                // flagData = text.split('\n').map(line => line.trim()).filter(Boolean);
+                
+                // 模拟数据 - 实际应用中应删除
+                await new Promise(resolve => setTimeout(resolve, 800));
+                flagData = [
+                    "CTF{this_is_a_sample_flag_1}",
+                    "FLAG{another_example_flag}",
+                    "SECRET{hidden_flag_value}",
+                    "KEY{very_important_key}",
+                    "PASSWORD{super_secure_password}",
+                    "TOKEN{authentication_token}",
+                    "ACCESS{restricted_access_code}",
+                    "AUTH{authorization_code}",
+                    "SECURE{encrypted_value}",
+                    "VALID{correct_flag_value}"
+                ];
+                
+            } catch (error) {
+                throw new Error('获取FLAG数据失败: ' + error.message);
             }
         }
         
@@ -506,16 +653,15 @@
         function showResult(type, message) {
             const resultDiv = document.getElementById('result');
             resultDiv.style.display = 'block';
-            resultDiv.className = type === 'valid' ? 'valid' : 
-                                 type === 'warning' ? 'warning' : 'invalid';
+            resultDiv.className = type;
             resultDiv.innerHTML = message;
         }
         
         // 保存历史记录
         function saveHistory(flag, isValid, flagRaw) {
-            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
             
-            // 去重处理（仅根据flag值去重）
+            // 去重处理（相同FLAG只保留最新记录）
             const existingIndex = history.findIndex(item => item.flag === flag);
             if (existingIndex !== -1) {
                 history.splice(existingIndex, 1);
@@ -529,37 +675,32 @@
                 time: Date.now()
             });
             
-            // 限制最大数量
-            if (history.length > MAX_HISTORY) {
+            // 限制最大数量为100条
+            if (history.length > 100) {
                 history.pop();
             }
             
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
             loadHistory();
+            loadStats();
         }
         
-        // 模拟从服务器获取FLAG数据
-        function fetchMockFlagData() {
-            return new Promise((resolve, reject) => {
-                // 模拟延迟
-                setTimeout(() => {
-                    // 模拟FLAG数据
-                    const flags = [
-                        "CTF{this_is_a_sample_flag_1}",
-                        "FLAG{another_example_flag}",
-                        "SECRET{hidden_flag_value}",
-                        "KEY{very_important_key}",
-                        "PASSWORD{super_secure_password}",
-                        "TOKEN{authentication_token}",
-                        "ACCESS{restricted_access_code}",
-                        "AUTH{authorization_code}",
-                        "SECURE{encrypted_value}",
-                        "VALID{correct_flag_value}"
-                    ];
-                    
-                    resolve(flags);
-                }, 500);
-            });
+        // 清空历史记录
+        function clearHistory() {
+            if (confirm('确定要清空所有历史记录吗？此操作不可撤销。')) {
+                localStorage.removeItem(HISTORY_KEY);
+                loadHistory();
+                loadStats();
+            }
+        }
+        
+        // 格式化时间
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return `
+                ${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}
+                ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}
+            `;
         }
     </script>
 </body>
