@@ -570,11 +570,7 @@
             // 显示加载状态
             loadingDiv.style.display = 'block';
             
-            try {
-                // 获取FLAG数据
-                if (flagData.length === 0) {
-                    await fetchFlagData();
-                }
+            
                 
                 // 创建MD5映射
                 const md5Store = new Map();
