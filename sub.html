@@ -390,7 +390,7 @@
             <div class="card-body">
                 <div class="input-group">
                     <input type="text" id="flagInput" placeholder="请输入要校验的FLAG值...">
-                    <button onclick="checkFlag()"><i class="fas fa-check-circle"></i> 校验FLAG</button>
+                    <button id="checkFlagBtn"><i class="fas fa-check-circle"></i> 校验FLAG</button>
                 </div>
                 
                 <div id="result"></div>
@@ -450,7 +450,7 @@
                             <button class="filter-btn" data-filter="valid"><i class="fas fa-check-circle"></i> 成功</button>
                             <button class="filter-btn" data-filter="invalid"><i class="fas fa-times-circle"></i> 失败</button>
                         </div>
-                        <button class="filter-btn" onclick="clearHistory()"><i class="fas fa-trash"></i> 清空历史</button>
+                        <button class="filter-btn" id="clearHistoryBtn"><i class="fas fa-trash"></i> 清空历史</button>
                     </div>
                     
                     <div class="history-list" id="historyList">
@@ -467,9 +467,16 @@
         let flagData = [];
         
         // 页面加载时
-        window.onload = function() {
-            loadHistory();
+        window.addEventListener('DOMContentLoaded', function() {
+            // 绑定按钮事件
+            document.getElementById('checkFlagBtn').addEventListener('click', checkFlag);
+            document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+            
+            // 绑定筛选按钮事件
             attachEventListeners();
+            
+            // 加载历史记录和统计
+            loadHistory();
             loadStats();
             
             // 添加回车键支持
@@ -478,7 +485,7 @@
                     checkFlag();
                 }
             });
-        };
+        });
         
         // 附加事件监听器
         function attachEventListeners() {
@@ -496,7 +503,7 @@
         
         // 加载统计信息
         function loadStats() {
-            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || [];
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
             
             const validCount = history.filter(item => item.isValid).length;
             const invalidCount = history.filter(item => !item.isValid).length;
@@ -570,7 +577,11 @@
             // 显示加载状态
             loadingDiv.style.display = 'block';
             
-            
+            try {
+                // 获取FLAG数据
+                if (flagData.length === 0) {
+                    await fetchFlagData();
+                }
                 
                 // 创建MD5映射
                 const md5Store = new Map();
@@ -624,7 +635,6 @@
                 if (!response.ok) throw new Error('无法获取FLAG文件');
                 const text = await response.text();
                 flagData = text.split('\n').map(line => line.trim()).filter(Boolean);
-                
                 
                 
             } catch (error) {
