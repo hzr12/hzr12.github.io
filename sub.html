@@ -586,7 +586,8 @@
                 // 创建MD5映射
                 const md5Store = new Map();
                 flagData.forEach(raw => {
-                    md5Store.set(CryptoJS.MD5(CryptoJS.enc.Utf8.parse(raw)).toString(), raw);
+                    const hash = CryptoJS.MD5(CryptoJS.enc.Utf8.parse(raw)).toString();
+                    md5Store.set(hash, raw);
                 });
                 
                 const flagRaw = md5Store.get(inputFlag);
