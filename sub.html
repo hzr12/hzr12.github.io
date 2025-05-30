@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>专业FLAG校验工具</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="/js/crypto-js.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -586,7 +586,8 @@
                 // 创建MD5映射
                 const md5Store = new Map();
                 flagData.forEach(raw => {
-                    md5Store.set(CryptoJS.MD5(CryptoJS.enc.Utf8.parse(raw)).toString(), raw);
+                    const hash = CryptoJS.MD5(CryptoJS.enc.Utf8.parse(raw)).toString();
+                    md5Store.set(hash, raw);
                 });
                 
                 const flagRaw = md5Store.get(inputFlag);
