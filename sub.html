@@ -624,25 +624,12 @@
         async function fetchFlagData() {
             try {
                 // 在实际应用中，这里应该替换为真实的API端点
-                // const response = await fetch('/Flag/Flag.txt');
-                // if (!response.ok) throw new Error('无法获取FLAG文件');
-                // const text = await response.text();
-                // flagData = text.split('\n').map(line => line.trim()).filter(Boolean);
+                const response = await fetch('/Flag/Flag.txt');
+                if (!response.ok) throw new Error('无法获取FLAG文件');
+                const text = await response.text();
+                flagData = text.split('\n').map(line => line.trim()).filter(Boolean);
                 
-                // 模拟数据 - 实际应用中应删除
-                await new Promise(resolve => setTimeout(resolve, 800));
-                flagData = [
-                    "CTF{this_is_a_sample_flag_1}",
-                    "FLAG{another_example_flag}",
-                    "SECRET{hidden_flag_value}",
-                    "KEY{very_important_key}",
-                    "PASSWORD{super_secure_password}",
-                    "TOKEN{authentication_token}",
-                    "ACCESS{restricted_access_code}",
-                    "AUTH{authorization_code}",
-                    "SECURE{encrypted_value}",
-                    "VALID{correct_flag_value}"
-                ];
+                
                 
             } catch (error) {
                 throw new Error('获取FLAG数据失败: ' + error.message);
