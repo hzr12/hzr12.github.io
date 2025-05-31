@@ -2,123 +2,469 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flag挑战</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #e6f3ff;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
+            padding: 20px;
         }
 
         .container {
-            text-align: center;
+            width: 90%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
         }
 
+        header {
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            pointer-events: none;
+        }
 
         h1 {
-            color: #000;
-            font-size: 36px;
-            margin-bottom: 30px;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 2;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        .content {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+
+        .image-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .image-frame {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border: 5px solid white;
+            position: relative;
+        }
+
+        .image-frame img {
+            width: 100%;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .image-frame:hover img {
+            transform: scale(1.03);
+        }
+
+        .image-caption {
+            background: #f0f5ff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            color: #1e3c72;
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .answer-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-number {
+            background: #1e3c72;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .question-text {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.4;
+            margin-bottom: 25px;
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .input-group {
-            margin: 20px 0;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            background: #f0f5ff;
+            border-radius: 50px;
+            padding: 5px;
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.15);
+            border: 2px solid #d0d9ff;
+        }
+
+        .input-container i {
+            font-size: 1.5rem;
+            color: #1e3c72;
+            margin: 0 15px;
         }
 
         input {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: 2px solid #ccc;
-            border-radius: 25px;
-            width: 250px;
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
             outline: none;
+            background: transparent;
+            transition: all 0.3s ease;
         }
 
-        button {
-            background-color: #1e90ff;
+        input:focus {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .submit-btn {
+            background: linear-gradient(90deg, #4CAF50 0%, #2E7D32 100%);
             color: white;
             border: none;
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-size: 16px;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
-            margin-left: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(46, 125, 50, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(46, 125, 50, 0.6);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .result-container {
+            padding: 0 30px 30px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.6s ease;
+        }
+
+        .result-container.show {
+            max-height: 200px;
+        }
+
+        .result-box {
+            background: linear-gradient(90deg, #4CAF50, #2E7D32);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-icon {
+            font-size: 2.5rem;
+            margin-right: 20px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .result-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .result-text .flag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 8px;
+            margin: 0 5px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
         }
 
         .next-btn {
-            background-color: #4CAF50; /* 绿色主题 */
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
             color: white;
             border: none;
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-size: 16px;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
-            margin-left: 10px;
-            margin-top: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px auto 0;
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.4);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
         }
 
-        .hidden {
-        display: none;
+        .next-btn.show {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        button:hover {
-            background-color: #0066cc;
+        .next-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(30, 60, 114, 0.6);
         }
 
-        .flag-code {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            display: inline-block;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="/images/真我.png", style="width: 35%; height: auto;">
+        <header>
+            <h1><i class="fas fa-flag"></i> Flag挑战</h1>
+            <p class="subtitle">根据图片内容填写正确答案获取Flag</p>
+        </header>
 
-        <div class="input-group">
-            <input type="text" placeholder="请输入">
-            <button onclick="checkAnswer()">提交</button>
+        <div class="content">
+            <div class="image-container">
+                <div class="image-frame">
+                    <img src="/images/真我.png" alt="真我">
+                </div>
+                <div class="image-caption">
+                    仔细观察图片内容，输入正确的关键词
+                </div>
+            </div>
+
+            <div class="answer-section">
+                <div class="question-header">
+                    <div class="question-number">1</div>
+                    <div style="font-weight: 500; color: #1e3c72;">图片填空题</div>
+                </div>
+
+                <div class="question-text">
+                    根据图片内容，输入正确的关键词：
+                </div>
+
+                <div class="input-group">
+                    <div class="input-container">
+                        <i class="fas fa-key"></i>
+                        <input type="text" id="answerInput" placeholder="在此输入答案">
+                    </div>
+                    <button class="submit-btn" onclick="checkAnswer()">
+                        <i class="fas fa-paper-plane"></i> 提交答案
+                    </button>
+                </div>
+
+                <button class="next-btn" id="nextLevelBtn" onclick="goNext()">
+                    <i class="fas fa-arrow-right"></i> 下一关
+                </button>
+            </div>
         </div>
 
-        <div id="flagContainer" class="flag-display hidden">
-            <div class="flag-code" id="flagContent"></div>
-        </div>
-
-        <div class="button-group">
-            <button class="next-btn hidden"  id="nextLevelBtn" onclick="goNext()">下一关</button>
+        <div class="result-container" id="resultContainer">
+            <div class="result-box">
+                <div class="result-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="result-text" id="resultContent">
+                    正确：Flag为 <span class="flag" id="flagContent">等待验证...</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        function checkAnswer() {
-            const answer = document.querySelector('input').value;
+        document.addEventListener('DOMContentLoaded', function() {
+            const answerInput = document.getElementById('answerInput');
+            const resultContainer = document.getElementById('resultContainer');
+            const flagContent = document.getElementById('flagContent');
             const nextBtn = document.getElementById('nextLevelBtn');
-            if(answer.toLowerCase() === '真我') {
-                flagContent.textContent = '正确Flag：17029318e8be515c846a8c56e31f92da';
-                flagContainer.classList.remove('hidden');
-                flagContainer.classList.add('visible');
-                nextBtn.classList.remove('hidden');
+
+            // 输入框聚焦时添加动画
+            answerInput.addEventListener('focus', function() {
+                this.parentElement.style.boxShadow = '0 4px 20px rgba(30, 60, 114, 0.25)';
+                this.parentElement.style.borderColor = '#1e3c72';
+            });
+
+            answerInput.addEventListener('blur', function() {
+                this.parentElement.style.boxShadow = '0 4px 15px rgba(30, 60, 114, 0.15)';
+                this.parentElement.style.borderColor = '#d0d9ff';
+            });
+        });
+
+        function checkAnswer() {
+            const answer = document.getElementById('answerInput').value.trim();
+            const resultContainer = document.getElementById('resultContainer');
+            const flagContent = document.getElementById('flagContent');
+            const nextBtn = document.getElementById('nextLevelBtn');
+
+            if (!answer) {
+                flagContent.textContent = '请输入答案';
+                resultContainer.classList.add('show');
+                return;
+            }
+
+            if (answer.toLowerCase() === '真我') {
+                // 显示结果
+                flagContent.textContent = '17029318e8be515c846a8c56e31f92da';
+                resultContainer.classList.add('show');
+
+                // 显示下一关按钮
+                setTimeout(() => {
+                    nextBtn.classList.add('show');
+                }, 500);
+
+                // 添加庆祝效果
+                createConfetti();
             } else {
                 flagContent.textContent = '答案错误，请继续加油';
-                flagContainer.classList.remove('hidden');
-                flagContainer.classList.add('visible');
+                resultContainer.classList.add('show');
+
+                // 错误提示动画
+                const inputContainer = document.querySelector('.input-container');
+                inputContainer.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    inputContainer.style.animation = '';
+                }, 500);
             }
         }
+
         function goNext() {
             // 跳转到下一关
             window.location.href = "index1.html";
+        }
+
+        function createConfetti() {
+            const container = document.querySelector('.container');
+            const confettiCount = 50;
+            const confettiIcons = ['🎉', '✨', '🎊', '🌟', '💻', '✅', '🏆', '🚀'];
+
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.innerHTML = confettiIcons[Math.floor(Math.random() * confettiIcons.length)];
+                confetti.style.position = 'absolute';
+                confetti.style.fontSize = '24px';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = '-30px';
+                confetti.style.opacity = '0';
+                confetti.style.zIndex = '9999';
+                confetti.style.animation = `confettiFall ${Math.random() * 3 + 2}s linear forwards`;
+                container.appendChild(confetti);
+
+                // 设置随机动画延迟
+                confetti.style.animationDelay = Math.random() * 1 + 's';
+
+                // 移除元素
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+
+            // 添加shake动画
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+                    20%, 40%, 60%, 80% { transform: translateX(8px); }
+                }
+            `;
+            document.head.appendChild(style);
         }
     </script>
 </body>

@@ -2,124 +2,434 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Flag挑战</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>答题页面</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #e6f3ff;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
+            padding: 20px;
         }
 
         .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 25px;
             text-align: center;
         }
 
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
 
-        h1 {
-            color: #000;
-            font-size: 36px;
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .question-container {
+            padding: 30px;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-number {
+            background: #4b6cb7;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .question-text {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.4;
             margin-bottom: 30px;
         }
 
-        .input-group {
-            margin: 20px 0;
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
-        input {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: 2px solid #ccc;
-            border-radius: 25px;
-            width: 250px;
-            outline: none;
-        }
-
-        button {
-            background-color: #1e90ff;
-            color: white;
-            border: none;
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-size: 16px;
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 18px 20px;
+            background: #f0f5ff;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background-color 0.3s;
-            margin-left: 10px;
+            transition: all 0.3s ease;
+            border: 2px solid #e0e7ff;
         }
 
-        .next-btn {
-            background-color: #4CAF50; /* 绿色主题 */
+        .option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-color: #4b6cb7;
+        }
+
+        .option.selected {
+            background: #4b6cb7;
             color: white;
+            border-color: #4b6cb7;
+        }
+
+        .option-label {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-weight: bold;
+            border: 2px solid #d0d9ff;
+        }
+
+        .option.selected .option-label {
+            background: #182848;
+            color: white;
+            border-color: white;
+        }
+
+        .option-text {
+            font-size: 1.2rem;
+            flex: 1;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 35px;
             border: none;
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-size: 16px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
-            margin-left: 10px;
-            margin-top: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .hidden {
-        display: none;
+        .btn-submit {
+            background: linear-gradient(90deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(46, 125, 50, 0.4);
         }
 
-        button:hover {
-            background-color: #0066cc;
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(46, 125, 50, 0.6);
         }
 
-        .flag-code {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            display: inline-block;
+        .btn-submit:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-reset {
+            background: #f0f5ff;
+            color: #4b6cb7;
+            border: 2px solid #4b6cb7;
+        }
+
+        .btn-reset:hover {
+            background: #4b6cb7;
+            color: white;
+        }
+
+        .result-container {
+            padding: 0 30px 30px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.6s ease;
+        }
+
+        .result-container.show {
+            max-height: 200px;
+        }
+
+        .result-box {
+            background: #4CAF50;
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-icon {
+            font-size: 2.5rem;
+            margin-right: 20px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .result-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            padding: 0 30px 20px;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: #e0e7ff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            .question-text {
+                font-size: 1.5rem;
+            }
+
+            .option-text {
+                font-size: 1rem;
+            }
+
+            .btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="/images/空梦.png", style="width: 35%; height: auto;">
+        <header>
+            <h1><i class="fas fa-graduation-cap"></i> 知识挑战赛</h1>
+            <p>测试你的知识水平，挑战你的思维极限</p>
+        </header>
 
-        <div class="input-group">
-            <input type="text" placeholder="请输入">
-            <button onclick="checkAnswer()">提交</button>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
         </div>
 
-        <div id="flagContainer" class="flag-display hidden">
-            <div class="flag-code" id="flagContent"></div>
+        <div class="question-container">
+            <div class="question-header">
+                <div class="question-number">1</div>
+                <div class="question-info">选择题 (单选)</div>
+            </div>
+
+            <div class="question-text">
+                以下哪个是HTML5中的语义化标签？
+            </div>
+
+            <div class="options">
+                <div class="option" data-value="a">
+                    <div class="option-label">A</div>
+                    <div class="option-text">&lt;div&gt;</div>
+                </div>
+                <div class="option" data-value="b">
+                    <div class="option-label">B</div>
+                    <div class="option-text">&lt;span&gt;</div>
+                </div>
+                <div class="option" data-value="c">
+                    <div class="option-label">C</div>
+                    <div class="option-text">&lt;article&gt;</div>
+                </div>
+                <div class="option" data-value="d">
+                    <div class="option-label">D</div>
+                    <div class="option-text">&lt;bold&gt;</div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-reset" id="resetBtn">
+                    <i class="fas fa-redo"></i> 重置选择
+                </button>
+                <button class="btn btn-submit" id="submitBtn" disabled>
+                    <i class="fas fa-paper-plane"></i> 提交答案
+                </button>
+            </div>
         </div>
 
-        <div class="button-group">
-            <button class="next-btn hidden"  id="nextLevelBtn" onclick="goNext()">下一关</button>
+        <div class="result-container" id="resultContainer">
+            <div class="result-box">
+                <div class="result-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="result-text">
+                    正确：HTML5的语义化标签包括&lt;article&gt;、&lt;section&gt;、&lt;nav&gt;等，它们提供了更好的文档结构和可访问性。
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        function checkAnswer() {
-            const answer = document.querySelector('input').value;
-            const nextBtn = document.getElementById('nextLevelBtn');
-            if(answer.toLowerCase() === '空梦') {
-                flagContent.textContent = '正确Flag：f0f8c0474ff22eb748f4bc62087c72c7';
-                flagContainer.classList.remove('hidden');
-                flagContainer.classList.add('visible');
-                nextBtn.classList.remove('hidden');
-            } else {
-                flagContent.textContent = '答案错误，请继续加油';
-                flagContainer.classList.remove('hidden');
-                flagContainer.classList.add('visible');
+        document.addEventListener('DOMContentLoaded', function() {
+            const options = document.querySelectorAll('.option');
+            const submitBtn = document.getElementById('submitBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const resultContainer = document.getElementById('resultContainer');
+            const progressBar = document.getElementById('progress');
+
+            let selectedOption = null;
+
+            // 选项选择事件
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除之前选中的选项
+                    options.forEach(opt => opt.classList.remove('selected'));
+
+                    // 选中当前选项
+                    this.classList.add('selected');
+                    selectedOption = this.getAttribute('data-value');
+
+                    // 启用提交按钮
+                    submitBtn.disabled = false;
+                });
+            });
+
+            // 提交按钮事件
+            submitBtn.addEventListener('click', function() {
+                if (selectedOption === 'c') {
+                    // 显示结果容器
+                    resultContainer.classList.add('show');
+
+                    // 更新进度条
+                    progressBar.style.width = '100%';
+
+                    // 禁用提交按钮
+                    this.disabled = true;
+
+                    // 添加庆祝效果
+                    celebrate();
+                } else {
+                    alert('回答错误，请再试一次！');
+                }
+            });
+
+            // 重置按钮事件
+            resetBtn.addEventListener('click', function() {
+                options.forEach(opt => opt.classList.remove('selected'));
+                selectedOption = null;
+                submitBtn.disabled = true;
+                resultContainer.classList.remove('show');
+                progressBar.style.width = '0%';
+            });
+
+            // 庆祝效果函数
+            function celebrate() {
+                const container = document.querySelector('.container');
+                const confettiCount = 30;
+
+                for (let i = 0; i < confettiCount; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.innerHTML = '🎉';
+                    confetti.style.position = 'absolute';
+                    confetti.style.fontSize = '24px';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-30px';
+                    confetti.style.opacity = '0';
+                    confetti.style.animation = `fall ${Math.random() * 3 + 2}s linear forwards`;
+                    container.appendChild(confetti);
+
+                    // 设置随机动画延迟
+                    confetti.style.animationDelay = Math.random() * 1 + 's';
+
+                    // 移除元素
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }
+
+                // 添加CSS动画
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    @keyframes fall {
+                        0% {
+                            transform: translateY(0) rotate(0deg);
+                            opacity: 0;
+                        }
+                        10% {
+                            opacity: 1;
+                        }
+                        90% {
+                            opacity: 1;
+                        }
+                        100% {
+                            transform: translateY(100vh) rotate(${Math.random() * 360}deg);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
             }
-        }
-        function goNext() {
-            // 跳转到下一关
-            window.location.href = "index2.html";
-        }
+        });
     </script>
 </body>
 </html>
