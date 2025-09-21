@@ -947,7 +947,7 @@
             </div>
           </div>
           <div class="station-details">
-            所属线路：${line.name}号线<br>
+            所属线路：${line.name}<br>
             站点编号：${index + 1}
           </div>
           <div class="station-actions">
@@ -1004,7 +1004,7 @@
         return;
       }
       
-      modalMessageEl.textContent = `您确定要清除${currentLine.name}号线的所有打卡数据吗？此操作不可撤销。`;
+      modalMessageEl.textContent = `您确定要清除${currentLine.name}的所有打卡数据吗？此操作不可撤销。`;
       modalEl.classList.add('active');
       
       confirmClearBtn.onclick = () => {
@@ -1015,7 +1015,7 @@
         });
         
         modalEl.classList.remove('active');
-        showToast(`${currentLine.name}号线打卡数据已清除`, 'success');
+        showToast(`${currentLine.name}打卡数据已清除`, 'success');
         
         // 重新渲染
         renderStations(currentLine, searchInputEl.value.trim());
