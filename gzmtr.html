@@ -1,429 +1,372 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>广州地铁打卡系统</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 15px;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC);
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-        }
-        
-        .subtitle {
-            font-size: 1rem;
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .station-section {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .line-selector {
-            margin-bottom: 15px;
-        }
-        
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            background-color: #f9f9f9;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 16px;
-        }
-        
-        .station-list {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 8px;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .station-item {
-            padding: 12px 10px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .station-item:last-child {
-            border-bottom: none;
-        }
-        
-        .station-item:hover {
-            background-color: #f0f8ff;
-        }
-        
-        .checkin-btn {
-            background-color: #4364F7;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-            min-width: 60px;
-        }
-        
-        .checkin-btn:hover, .checkin-btn:active {
-            background-color: #0052D4;
-        }
-        
-        .checked-in {
-            color: #28a745;
-            font-weight: bold;
-        }
-        
-        .upload-section {
-            margin-top: 15px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .upload-section.active {
-            display: block;
-        }
-        
-        .upload-section h3 {
-            margin-bottom: 12px;
-            color: #0052D4;
-            font-size: 1.1rem;
-        }
-        
-        .upload-btn {
-            background-color: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 12px;
-            font-size: 16px;
-            width: 100%;
-            display: block;
-        }
-        
-        .upload-btn:hover, .upload-btn:active {
-            background-color: #218838;
-        }
-        
-        .progress-bar {
-            height: 8px;
-            background-color: #e9ecef;
-            border-radius: 4px;
-            margin-top: 12px;
-            overflow: hidden;
-        }
-        
-        .progress {
-            height: 100%;
-            background-color: #007bff;
-            width: 0%;
-            transition: width 0.3s;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 15px;
-            margin-top: 20px;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        
-        /* 移动端优化 */
-        @media (max-width: 480px) {
-            .container {
-                padding: 10px;
-            }
-            
-            header {
-                padding: 12px;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
-            
-            .subtitle {
-                font-size: 0.9rem;
-            }
-            
-            .station-section {
-                padding: 12px;
-            }
-            
-            .station-list {
-                max-height: 300px;
-            }
-            
-            .station-item {
-                padding: 10px 8px;
-                font-size: 0.95rem;
-            }
-            
-            .checkin-btn {
-                padding: 6px 10px;
-                font-size: 0.9rem;
-                min-width: 50px;
-            }
-        }
-        
-        /* 触摸优化 */
-        button, .station-item {
-            transition: transform 0.1s;
-        }
-        
-        button:active, .station-item:active {
-            transform: scale(0.98);
-        }
-        
-        /* 防止iOS缩放 */
-        input, select, textarea {
-            font-size: 16px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>广州地铁打卡</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background-color: #f5f5f5;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    #lines-list {
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      overflow-x: auto;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+      padding-bottom: 15px;
+      margin-bottom: 5px;
+    }
+    #stations-list {
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+    .line-button {
+      padding: 12px 15px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 1rem;
+      min-width: 80px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .line-button:hover, .line-button:active {
+      background-color: #0056b3;
+    }
+    .station {
+      display: flex;
+      align-items: center;
+      padding: 15px 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .station:last-child {
+      border-bottom: none;
+    }
+    .station-name {
+      flex: 1;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .upload-button {
+      padding: 10px 15px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .upload-button:hover, .upload-button:active {
+      background-color: #218838;
+    }
+    .status {
+      margin-left: 10px;
+      font-weight: bold;
+      font-size: 1rem;
+      min-width: 70px;
+      text-align: center;
+    }
+    .status.checked {
+      color: #28a745;
+    }
+    .status.not-checked {
+      color: #dc3545;
+    }
+    .current-line {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin: 5px 0 15px;
+      color: #007bff;
+    }
+    .progress-bar {
+      height: 8px;
+      background-color: #e9ecef;
+      border-radius: 4px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .progress {
+      height: 100%;
+      background-color: #28a745;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      text-align: right;
+      font-size: 0.9rem;
+      color: #6c757d;
+      margin-top: 5px;
+    }
+    .line-selector {
+      display: none;
+    }
+    
+    /* 小屏幕设备 */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+        font-size: 14px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .line-button {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        min-width: 70px;
+      }
+      .station-name {
+        font-size: 1rem;
+      }
+      .upload-button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+      }
+      .status {
+        font-size: 0.9rem;
+        min-width: 60px;
+      }
+    }
+    
+    /* 横屏模式 */
+    @media (min-width: 768px) and (orientation: landscape) {
+      .container {
+        flex-direction: row;
+      }
+      #lines-list {
+        flex: 1;
+        max-width: 200px;
+        flex-direction: column;
+        overflow-y: auto;
+        max-height: calc(100vh - 150px);
+      }
+      #stations-list {
+        flex: 3;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>广州地铁打卡系统</h1>
-            <p class="subtitle">记录您的地铁旅程，留下美好回忆</p>
-        </header>
-        
-        <div class="main-content">
-            <div class="station-section">
-                <div class="line-selector">
-                    <select id="line-select">
-                        <option value="line1">1号线 (广州东站—西塱)</option>
-                        <option value="line2">2号线 (嘉禾望岗—广州南站)</option>
-                        <option value="line3">3号线 (天河客运站/机场北—海傍)</option>
-                        <option value="line4">4号线 (黄村—南沙客运港)</option>
-                        <option value="line5">5号线 (滘口—黄埔新港)</option>
-                        <option value="line6">6号线 (浔峰岗—香雪)</option>
-                        <option value="line7">7号线 (美的大道—燕山)</option>
-                        <option value="line8">8号线 (滘心—万胜围)</option>
-                        <option value="line9">9号线 (高增—飞鹅岭)</option>
-                        <option value="line10">10号线 (西塱—杨箕东)</option>
-                    </select>
-                </div>
-                
-                <div class="station-list" id="station-list">
-                    <!-- 站点列表将通过JavaScript动态生成 -->
-                </div>
-                
-                <div class="upload-section" id="upload-section">
-                    <h3>上传打卡图片 - <span id="current-station"></span></h3>
-                    <input type="file" id="image-upload" accept="image/*">
-                    <button class="upload-btn" id="upload-btn">上传并打卡</button>
-                    <div class="progress-bar">
-                        <div class="progress" id="upload-progress"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <footer>
-            <p>© 2025 huangzr自制 | 广州地铁打卡系统 | 记录您的地铁旅程</p>
-        </footer>
+  <h1>广州地铁打卡</h1>
+  <div class="container">
+    <div class="current-line" id="current-line">请选择线路</div>
+    <div id="lines-list"></div>
+    <div id="stations-list"></div>
+    <div class="progress-bar">
+      <div class="progress" id="progress-bar"></div>
     </div>
+    <div class="progress-text" id="progress-text">0/0 (0%)</div>
+  </div>
 
-    <script>
-        // 地铁线路数据
-        const metroLines = {
-            line1: {
-                name: "1号线",
-                stations: ["广州东站", "体育中心", "体育西路", "杨箕", "东山口", "烈士陵园", "农讲所", "公园前", "西门口", "陈家祠", "长寿路", "黄沙", "芳村", "花地湾", "坑口", "西塱"]
-            },
-            line2: {
-                name: "2号线",
-                stations: ["嘉禾望岗", "白云文化广场", "白云公园", "飞翔公园", "三元里", "广州火车站", "越秀公园", "纪念堂", "公园前", "海珠广场", "市二宫", "江南西", "昌岗", "江泰路", "东晓南", "南洲", "洛溪", "南浦", "会江", "石壁", "广州南站"]
-            },
-            line3: {
-                name: "3号线",
-                stations: ["天河客运站", "五山", "华师", "岗顶", "石牌桥", "体育西路", "珠江新城", "广州塔", "客村", "大塘", "沥滘", "厦滘", "大石", "汉溪长隆", "市桥", "番禺广场", "海傍"]
-            },
-            line4: {
-                name: "4号线",
-                stations: ["黄村", "车陂", "车陂南", "万胜围", "官洲", "大学城北", "大学城南", "新造", "石碁", "海傍", "低涌", "东涌", "庆盛", "黄阁汽车城", "黄阁", "蕉门", "金洲", "飞沙角", "广隆", "大涌", "塘坑", "南横", "南沙客运港"]
-            },
-            line5: {
-                name: "5号线",
-                stations: ["滘口", "坦尾", "中山八", "西场", "西村", "广州火车站", "小北", "淘金", "区庄", "动物园", "杨箕", "五羊邨", "珠江新城", "猎德", "潭村", "员村", "科韵路", "车陂南", "东圃", "三溪", "鱼珠", "大沙地", "大沙东", "文冲", "双沙", "庙头", "夏园", "保盈大道", "夏港", "黄埔新港"]
-            },
-            line6: {
-                name: "6号线",
-                stations: ["浔峰岗", "横沙", "沙贝", "河沙", "坦尾", "如意坊", "黄沙", "文化公园", "一德路", "海珠广场", "北京路", "团一大广场", "东湖", "东山口", "区庄", "黄花岗", "沙河顶", "天平架", "燕塘", "天河客运站", "长湴", "植物园", "龙洞", "柯木塱", "高塘石", "黄陂", "金峰", "暹岗", "苏元", "萝岗", "香雪"]
-            },
-            line7: {
-                name: "7号线",
-                stations: ["美的大道", "北滘公园", "美的", "南涌", "锦龙", "陈村", "陈村北", "大洲", "广州南站", "石壁", "谢村", "钟村", "汉溪长隆", "南村万博", "员岗", "板桥", "大学城南", "深井", "长洲", "裕丰围", "大沙东", "姬堂", "加庄", "科丰路", "萝岗", "水西", "燕山"]
-            },
-            line8: {
-                name: "8号线",
-                stations: ["万胜围", "琶洲", "新港东", "磨碟沙", "赤岗", "客村", "鹭江", "中大", "晓港", "昌岗", "宝岗大道", "沙园", "凤凰新村", "同福西", "文化公园", "华林寺", "陈家祠", "彩虹桥", "西村", "鹅掌坦", "同德", "上步", "聚龙", "石潭", "小坪", "石井", "亭岗", "滘心"]
-            },
-            line9: {
-                name: "9号线",
-                stations: ["飞鹅岭", "花都汽车城", "广州北站", "花城路", "花果山公园", "花都广场", "马鞍山公园", "莲塘", "清布", "清塘", "高增"]
-            },
-            line10: {
-                name: "10号线",
-                stations: ["西塱", "花围", "东沙", "大干围", "工业大道南", "东晓南", "五凤", "中大南门", "滨江东路", "东湖", "五羊邨", "杨箕东"]
-            }
-        };
+  <script>
+    // 广州地铁线路数据
+    const lines = [
+      {
+        name: "1号线",
+        stations: ["广州东站", "体育中心", "体育西路", "杨箕", "东山口", "烈士陵园", "农讲所", "公园前", "西门口", "陈家祠", "长寿路", "黄沙", "芳村", "花地湾", "坑口", "西塱"]
+      },
+      {
+        name: "2号线",
+        stations: ["广州南站", "石壁", "会江", "南浦", "洛溪", "南洲", "东晓南", "江泰路", "昌岗", "江南西", "市二宫", "海珠广场", "公园前", "纪念堂", "越秀公园", "广州火车站", "三元里", "飞翔公园", "白云公园", "白云文化广场", "萧岗", "江夏", "黄边", "嘉禾望岗"]
+      },
+      {
+        name: "3号线",
+        stations: ["天河客运站", "五山", "华师", "岗顶", "石牌桥", "体育西路", "珠江新城", "广州塔", "客村", "大塘", "沥滘", "厦滘", "大石", "汉溪长隆", "市桥", "番禺广场", "海傍", "海涌路", "石碁南", "傍江", "林和西", "燕塘", "梅花园", "京溪南方医院", "同和", "永泰", "白云大道北", "嘉禾望岗", "龙归", "人和", "高增", "机场南（1号航站楼）", "机场北（2号航站楼）"]
+      },
+      {
+        name: "4号线",
+        stations: ["黄村", "车陂", "车陂南", "万胜围", "官洲", "大学城北", "大学城南", "新造", "石碁", "海傍", "低涌", "东涌", "庆盛", "黄阁汽车城", "黄阁", "蕉门", "金洲", "飞沙角", "广隆", "大涌", "塘坑", "南横", "南沙客运港"]
+      },
+      {
+        name: "5号线",
+        stations: ["滘口", "坦尾", "中山八", "西场", "西村", "广州火车站", "小北", "淘金", "区庄", "动物园", "杨箕", "五羊邨", "珠江新城", "猎德", "潭村", "员村", "科韵路", "车陂南", "东圃", "三溪", "鱼珠", "大沙地", "大沙东", "文冲", "双沙", "庙头", "夏园", "保盈大道", "夏港", "黄埔新港"]
+      },
+      {
+        name: "6号线",
+        stations: ["浔峰岗", "横沙", "沙贝", "河沙", "坦尾", "如意坊", "黄沙", "文化公园", "一德路", "海珠广场", "北京路", "团一大广场", "东湖", "东山口", "区庄", "黄花岗", "沙河顶", "天平架", "燕塘", "天河客运站", "长湴", "植物园", "龙洞", "柯木塱", "高塘石", "黄陂", "金峰", "暹岗", "苏元", "萝岗", "香雪"]
+      },
+      {
+        name: "7号线",
+        stations: ["美的大道", "北滘公园", "美的", "南涌", "锦龙", "陈村", "陈村北", "大洲", "广州南站", "石壁", "谢村", "钟村", "汉溪长隆", "南村万博", "员岗", "板桥", "大学城南", "深井", "长洲", "裕丰围", "大沙东", "姬堂", "加庄", "科丰路", "萝岗", "水西", "燕山"]
+      },
+      {
+        name: "8号线",
+        stations: ["万胜围", "琶洲", "新港东", "磨碟沙", "赤岗", "客村", "鹭江", "中大", "晓港", "昌岗", "宝岗大道", "沙园", "凤凰新村", "同福西", "文化公园", "华林寺", "陈家祠", "彩虹桥", "西村", "鹅掌坦", "同德", "上步", "聚龙", "石潭", "小坪", "石井", "亭岗", "滘心"]
+      },
+      {
+        name: "9号线",
+        stations: ["飞鹅岭", "花都汽车城", "广州北站", "花城路", "花果山公园", "花都广场", "马鞍山公园", "莲塘", "清布", "清塘", "高增"]
+      },
+      {
+        name: "10号线",
+        stations: ["西塱", "花围", "东沙", "大干围", "工业大道南", "东晓南", "五凤", "中大南门", "滨江东路", "东湖", "五羊邨", "杨箕东", "天河路", "石牌桥", "岗顶", "华师", "五山", "天河客运站"]
+      },
+      {
+        name: "11号线",
+        stations: ["赤沙", "琶洲", "员村", "天河公园", "华景路", "华师", "龙口西", "广州东站", "沙河", "云台花园", "大金钟路", "中医药大学", "梓元岗", "广州火车站", "流花", "彩虹桥", "中山八", "如意坊", "石围塘", "芳村", "大冲口", "沙涌", "鹤洞东", "棣园", "燕岗", "江泰路", "五凤", "逸景路", "上涌", "大塘", "龙潭"]
+      },
+      {
+        name: "12号线",
+        stations: ["浔峰岗", "浔峰岗北", "西洲", "聚龙", "广州白云站", "棠涌", "新市墟", "白云文化广场", "广州体育馆", "景泰", "柯子岭", "中医药大学", "麓湖", "建设六马路", "烈士陵园", "东湖", "二沙岛", "赤岗塔", "赤岗", "赤沙北", "赤沙", "北山", "官洲", "大学城北", "大学城南"]
+      },
+      {
+        name: "13号线",
+        stations: ["鱼珠", "裕丰围", "双岗", "南海神庙", "夏园", "南岗", "沙村", "白江", "新塘", "官湖", "新沙", "天河公园", "棠下", "车陂", "天河珠村", "朝阳", "庆丰", "凰岗", "西洲", "松溪", "罗冲围", "西场", "彩虹桥", "纪念堂", "建设六马路"]
+      },
+      {
+        name: "14号线",
+        stations: ["嘉禾望岗", "白云东平", "夏良", "太和", "竹料", "钟落潭", "马沥", "新和", "太平", "神岗", "赤草", "从化客运站", "东风", "红卫", "新南", "枫下", "知识城", "何棠下", "旺村", "汤村", "镇龙北", "极龙"]
+      },
+      {
+        name: "18号线",
+        stations: ["万顷沙", "横沥", "番禺广场", "南村万博", "沙溪", "龙潭", "磨碟沙", "冼村"]
+      },
+      {
+        name: "21号线",
+        stations: ["天河公园", "棠东", "黄村", "大观南路", "天河智慧城", "神舟路", "科学城", "苏元", "水西", "长平", "金坑", "镇龙西", "极龙", "中新", "坑贝", "极岗", "朱村", "山田", "钟岗", "增城广场"]
+      },
+      {
+        name: "22号线",
+        stations: ["番禺广场", "市广路", "极州南站", "陈头岗", "南浦西", "南漖", "西塱", "芳村", "彩虹桥", "广州火车站", "广州白云站", "夏茅", "白云城市中心", "方石", "人和", "机场东（3号航站楼）"]
+      },
+      {
+        name: "广佛线",
+        stations: ["新城东", "东平", "世纪莲", "澜石", "魁奇路", "季华园", "同济路", "祖庙", "普君北路", "朝安", "桂城", "南桂极", "虫雷岗", "千灯湖", "金融高新区", "龙溪", "菊树", "西塱", "鹤洞", "沙涌", "沙园", "燕岗", "石溪", "南洲", "沥滘"]
+      },
+      {
+        name: "APM线",
+        stations: ["广州塔", "海心沙", "大剧院", "花城大道", "妇儿中心", "黄埔大道", "天河南", "体育中心南", "林和西"]
+      }
+    ];
 
-        // 当前选中的线路和站点
-        let currentLine = 'line1';
-        let currentStation = null;
+    let currentLine = null; // 当前显示的线路
 
-        // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始化线路选择
-            const lineSelect = document.getElementById('line-select');
-            lineSelect.addEventListener('change', function() {
-                currentLine = this.value;
-                loadStations(currentLine);
-            });
+    // 初始化：渲染线路列表
+    function renderLines() {
+      const linesList = document.getElementById('lines-list');
+      linesList.innerHTML = ''; // 清空
+      lines.forEach(line => {
+        const button = document.createElement('button');
+        button.className = 'line-button';
+        button.textContent = line.name;
+        button.onclick = () => renderStations(line);
+        linesList.appendChild(button);
+      });
+    }
 
-            // 初始化上传按钮
-            const uploadBtn = document.getElementById('upload-btn');
-            uploadBtn.addEventListener('click', handleUpload);
+    // 渲染站点列表
+    function renderStations(line) {
+      currentLine = line;
+      document.getElementById('current-line').textContent = `${line.name} 站点列表`;
+      
+      const stationsList = document.getElementById('stations-list');
+      stationsList.innerHTML = ''; // 清空
+      
+      let checkedCount = 0;
+      
+      line.stations.forEach(station => {
+        const key = `${line.name}-${station}`;
+        const isChecked = localStorage.getItem(key) === 'true';
+        if (isChecked) checkedCount++;
+        
+        const stationDiv = document.createElement('div');
+        stationDiv.className = 'station';
 
-            // 加载默认线路的站点
-            loadStations(currentLine);
-        });
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'station-name';
+        nameSpan.textContent = station;
 
-        // 加载站点列表
-        function loadStations(line) {
-            const stationList = document.getElementById('station-list');
-            stationList.innerHTML = '';
-            
-            const stations = metroLines[line].stations;
-            
-            stations.forEach(station => {
-                const stationItem = document.createElement('div');
-                stationItem.className = 'station-item';
-                
-                // 检查是否已打卡
-                const isChecked = localStorage.getItem(`${line}-${station}`);
-                
-                stationItem.innerHTML = `
-                    <span class="${isChecked ? 'checked-in' : ''}">${station}</span>
-                    <button class="checkin-btn" data-station="${station}">打卡</button>
-                `;
-                
-                stationList.appendChild(stationItem);
-            });
-            
-            // 添加打卡按钮事件监听
-            document.querySelectorAll('.checkin-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    currentStation = this.getAttribute('data-station');
-                    showUploadSection(currentStation);
-                });
-            });
-        }
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        fileInput.id = `file-${key}`;
+        fileInput.onchange = () => handleUpload(line.name, station);
 
-        // 显示上传区域
-        function showUploadSection(station) {
-            const uploadSection = document.getElementById('upload-section');
-            const currentStationSpan = document.getElementById('current-station');
-            
-            currentStationSpan.textContent = station;
-            uploadSection.classList.add('active');
-            
-            // 滚动到上传区域
-            uploadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        const uploadButton = document.createElement('button');
+        uploadButton.className = 'upload-button';
+        uploadButton.textContent = '上传图片';
+        uploadButton.onclick = () => fileInput.click();
 
-        // 处理上传
-        function handleUpload() {
-            const fileInput = document.getElementById('image-upload');
-            const progressBar = document.getElementById('upload-progress');
-            
-            if (!fileInput.files.length) {
-                alert('请选择要上传的图片');
-                return;
-            }
-            
-            // 模拟上传过程
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 10;
-                progressBar.style.width = `${progress}%`;
-                
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    
-                    // 保存打卡记录
-                    localStorage.setItem(`${currentLine}-${currentStation}`, 'true');
-                    
-                    // 更新UI
-                    loadStations(currentLine);
-                    
-                    // 隐藏上传区域
-                    document.getElementById('upload-section').classList.remove('active');
-                    fileInput.value = '';
-                    progressBar.style.width = '0%';
-                    
-                    alert('打卡成功！');
-                }
-            }, 100);
-        }
-    </script>
+        const statusSpan = document.createElement('span');
+        statusSpan.className = isChecked ? 'status checked' : 'status not-checked';
+        statusSpan.textContent = isChecked ? '✓ 已打卡' : '✗ 未打卡';
+
+        stationDiv.appendChild(nameSpan);
+        stationDiv.appendChild(uploadButton);
+        stationDiv.appendChild(fileInput);
+        stationDiv.appendChild(statusSpan);
+        stationsList.appendChild(stationDiv);
+      });
+      
+      // 更新进度条
+      updateProgressBar(checkedCount, line.stations.length);
+    }
+
+    // 更新进度条
+    function updateProgressBar(checked, total) {
+      const progressBar = document.getElementById('progress-bar');
+      const progressText = document.getElementById('progress-text');
+      
+      const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
+      progressBar.style.width = `${percentage}%`;
+      progressText.textContent = `${checked}/${total} (${percentage}%)`;
+    }
+
+    // 处理上传图片
+    function handleUpload(lineName, stationName) {
+      const key = `${lineName}-${stationName}`;
+      localStorage.setItem(key, 'true');
+      // 重新渲染当前线路以更新状态
+      if (currentLine) {
+        renderStations(currentLine);
+      }
+    }
+
+    // 页面加载时初始化
+    window.onload = function() {
+      renderLines();
+      
+      // 初始显示第一条线路
+      if (lines.length > 0) {
+        renderStations(lines[0]);
+      }
+    };
+  </script>
 </body>
 </html>
