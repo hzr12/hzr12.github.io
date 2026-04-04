@@ -3,469 +3,657 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flag挑战</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>同心圆地图绘制</title>
+    <script src="https://map.qq.com/api/js?v=2.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --bg: #060c18;
+            --fg: #dce4f0;
+            --muted: #5a6b85;
+            --accent: #00d4aa;
+            --accent-dim: rgba(0, 212, 170, 0.12);
+            --card: rgba(8, 14, 28, 0.92);
+            --border: rgba(80, 120, 170, 0.15);
+            --danger: #ff4757;
+            --danger-dim: rgba(255, 71, 87, 0.12);
+            --input-bg: rgba(255, 255, 255, 0.04);
         }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--fg);overflow:hidden;height:100vh;-webkit-font-smoothing:antialiased}
+        #map{width:100%;height:100vh;z-index:1;position:relative}
+        #circle-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:10000;pointer-events:none}
+        .panel{position:fixed;top:16px;left:16px;width:310px;max-height:calc(100vh - 32px);overflow-y:auto;overflow-x:hidden;background:var(--card);backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:14px;z-index:1000;box-shadow:0 8px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.03);transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .3s ease}
+        .panel.hidden{transform:translateX(-340px);opacity:0;pointer-events:none}
+        .panel::-webkit-scrollbar{width:4px}
+        .panel::-webkit-scrollbar-track{background:transparent}
+        .panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+        .panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+        .panel-title{font-size:15px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+        .panel-title i{color:var(--accent);font-size:13px}
+        .panel-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+        .panel-close:hover{background:rgba(255,255,255,.06);color:var(--fg)}
+        .panel-toggle{position:fixed;top:16px;left:16px;z-index:999;width:42px;height:42px;background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:10px;color:var(--accent);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:all .3s;opacity:0;pointer-events:none}
+        .panel-toggle.visible{opacity:1;pointer-events:auto}
+        .panel-toggle:hover{background:var(--accent-dim);transform:scale(1.05)}
 
-        body {
-            background: linear-gradient(135deg, #1a2980, #26d0ce);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+        .search-wrap{padding:12px 18px;border-bottom:1px solid var(--border);position:relative}
+        .search-wrap>i{position:absolute;left:32px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+        .search-input{width:100%;padding:8px 10px 8px 30px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--fg);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}
+        .search-input::placeholder{color:var(--muted)}
+        .search-input:focus{border-color:rgba(0,212,170,.4)}
+        .search-results{position:absolute;left:18px;right:18px;top:100%;margin-top:4px;background:rgba(10,16,32,.96);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:none;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+        .search-results.show{display:block}
+        .search-item{padding:10px 12px;font-size:12px;color:var(--fg);cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;line-height:1.4}
+        .search-item:last-child{border-bottom:none}
+        .search-item:hover{background:var(--accent-dim)}
+        .search-item .sub{color:var(--muted);font-size:11px;margin-top:2px}
 
-        .container {
-            width: 90%;
-            max-width: 900px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            animation: fadeIn 0.8s ease-out;
-        }
+        .section{padding:14px 18px;border-bottom:1px solid var(--border)}
+        .section:last-child{border-bottom:none}
+        .section-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+        .map-style-toggle{display:flex;gap:4px;background:var(--input-bg);border-radius:8px;padding:3px}
+        .map-style-btn{flex:1;padding:5px 0;background:none;border:none;border-radius:6px;color:var(--muted);font-size:11px;font-family:inherit;cursor:pointer;transition:all .2s}
+        .map-style-btn.active{background:var(--accent-dim);color:var(--accent)}
+        .map-style-btn:hover:not(.active){color:var(--fg)}
 
-        header {
-            background: linear-gradient(90deg, #1e3c72, #2a5298);
-            color: white;
-            padding: 25px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
+        .hint{font-size:12.5px;color:var(--muted);line-height:1.8}
+        .input-row{margin-bottom:12px}
+        .input-row:last-child{margin-bottom:0}
+        .input-row label{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:12.5px;color:var(--fg);font-weight:400}
+        .num-input-wrap{display:flex;gap:6px}
+        .num-input{flex:1;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--fg);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;font-variant-numeric:tabular-nums}
+        .num-input::placeholder{color:var(--muted)}
+        .num-input:focus{border-color:rgba(0,212,170,.4)}
+        .num-input.invalid{border-color:var(--danger)}
+        .unit-select{width:62px;padding:8px 0;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--fg);font-size:12px;font-family:inherit;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6b85'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:20px;transition:border-color .2s}
+        .unit-select:focus{border-color:rgba(0,212,170,.4)}
+        .unit-select option{background:#0c1424;color:var(--fg)}
 
-        header::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
-            pointer-events: none;
-        }
+        .ring-count{font-size:12px;color:var(--muted);margin-top:8px}
+        .ring-count strong{color:var(--fg);font-weight:500}
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border:none;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;transition:all .2s;width:100%}
+        .btn-danger{background:var(--danger-dim);color:var(--danger)}
+        .btn-danger:hover{background:rgba(255,71,87,.2)}
+        .btn-ghost{background:var(--input-bg);color:var(--muted)}
+        .btn-ghost:hover{background:rgba(255,255,255,.08);color:var(--fg)}
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            position: relative;
-            z-index: 2;
-        }
+        .circle-list{display:flex;flex-direction:column;gap:4px}
+        .circle-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s}
+        .circle-item:hover{background:rgba(255,255,255,.04)}
+        .circle-item.active{background:var(--accent-dim)}
+        .circle-dot{width:10px;height:10px;border-radius:50%;background:rgba(100,185,255,.5);border:2px solid rgba(20,65,155,.8);flex-shrink:0}
+        .circle-item.active .circle-dot{background:var(--accent);border-color:var(--accent)}
+        .circle-info{flex:1;min-width:0}
+        .circle-info-name{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .circle-info-meta{font-size:11px;color:var(--muted);margin-top:1px}
+        .circle-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;opacity:0;transition:all .15s;flex-shrink:0}
+        .circle-item:hover .circle-del{opacity:1}
+        .circle-del:hover{background:var(--danger-dim);color:var(--danger)}
+        .empty-state{text-align:center;padding:20px 0;color:var(--muted);font-size:12.5px}
+        .no-selection{text-align:center;padding:16px 0;color:var(--muted);font-size:12.5px}
 
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            position: relative;
-            z-index: 2;
-        }
+        .status-bar{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1000;padding:8px 20px;background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--muted);box-shadow:0 4px 20px rgba(0,0,0,.3);white-space:nowrap;pointer-events:none}
+        .coords-bar{position:fixed;bottom:28px;right:16px;z-index:1000;padding:6px 14px;background:var(--card);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:8px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
+        .zoom-hint{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:1000;padding:8px 18px;background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--muted);box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:opacity .3s}
+        .zoom-hint.show{opacity:1}
+        .zoom-hint i{color:var(--accent);margin-right:4px}
+        .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(16px);background:rgba(8,14,28,.95);backdrop-filter:blur(16px);border:1px solid var(--border);color:var(--fg);padding:10px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);z-index:2000;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-        .content {
-            display: flex;
-            padding: 30px;
-            gap: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .content {
-                flex-direction: column;
-            }
-        }
-
-        .image-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .image-frame {
-            width: 100%;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            border: 5px solid white;
-            position: relative;
-        }
-
-        .image-frame img {
-            width: 100%;
-            display: block;
-            transition: transform 0.5s ease;
-        }
-
-        .image-frame:hover img {
-            transform: scale(1.03);
-        }
-
-        .image-caption {
-            background: #f0f5ff;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            color: #1e3c72;
-            font-weight: 500;
-            text-align: center;
-            width: 100%;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-        }
-
-        .answer-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .question-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .question-number {
-            background: #1e3c72;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .question-text {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #333;
-            line-height: 1.4;
-            margin-bottom: 25px;
-            background: linear-gradient(90deg, #1e3c72, #2a5298);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .input-group {
-            margin: 25px 0;
-            position: relative;
-        }
-
-        .input-container {
-            display: flex;
-            align-items: center;
-            background: #f0f5ff;
-            border-radius: 50px;
-            padding: 5px;
-            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.15);
-            border: 2px solid #d0d9ff;
-        }
-
-        .input-container i {
-            font-size: 1.5rem;
-            color: #1e3c72;
-            margin: 0 15px;
-        }
-
-        input {
-            flex: 1;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            outline: none;
-            background: transparent;
-            transition: all 0.3s ease;
-        }
-
-        input:focus {
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .submit-btn {
-            background: linear-gradient(90deg, #4CAF50 0%, #2E7D32 100%);
-            color: white;
-            border: none;
-            padding: 15px 35px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 15px;
-            width: 100%;
-            justify-content: center;
-            box-shadow: 0 5px 15px rgba(46, 125, 50, 0.4);
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(46, 125, 50, 0.6);
-        }
-
-        .submit-btn:active {
-            transform: translateY(-1px);
-        }
-
-        .result-container {
-            padding: 0 30px 30px;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.6s ease;
-        }
-
-        .result-container.show {
-            max-height: 200px;
-        }
-
-        .result-box {
-            background: linear-gradient(90deg, #4CAF50, #2E7D32);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
-            animation: fadeIn 0.5s ease;
-        }
-
-        .result-icon {
-            font-size: 2.5rem;
-            margin-right: 20px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .result-text {
-            font-size: 1.3rem;
-            font-weight: 600;
-            flex: 1;
-        }
-
-        .result-text .flag {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 5px 15px;
-            border-radius: 8px;
-            margin: 0 5px;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-        }
-
-        .next-btn {
-            background: linear-gradient(90deg, #1e3c72, #2a5298);
-            color: white;
-            border: none;
-            padding: 15px 35px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 20px auto 0;
-            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.4);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-        }
-
-        .next-btn.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .next-btn:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 8px 20px rgba(30, 60, 114, 0.6);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes confettiFall {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
+        @media(max-width:640px){.panel{width:calc(100vw - 32px)}.status-bar{font-size:11px;padding:6px 14px}}
+        @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-flag"></i> Flag挑战</h1>
-            <p class="subtitle">根据图片内容填写正确答案获取Flag</p>
-        </header>
-
-        <div class="content">
-            <div class="image-container">
-                <div class="image-frame">
-                    <img src="/images/真我.png" alt="真我">
-                </div>
-                <div class="image-caption">
-                    仔细观察图片内容，输入正确的关键词
-                </div>
-            </div>
-
-            <div class="answer-section">
-                <div class="question-header">
-                    <div class="question-number">1</div>
-                    <div style="font-weight: 500; color: #1e3c72;">图片填空题</div>
-                </div>
-
-                <div class="question-text">
-                    根据图片内容，输入正确的关键词：
-                </div>
-
-                <div class="input-group">
-                    <div class="input-container">
-                        <i class="fas fa-key"></i>
-                        <input type="text" id="answerInput" placeholder="在此输入答案">
-                    </div>
-                    <button class="submit-btn" onclick="checkAnswer()">
-                        <i class="fas fa-paper-plane"></i> 提交答案
-                    </button>
-                </div>
-
-                <button class="next-btn" id="nextLevelBtn" onclick="goNext()">
-                    <i class="fas fa-arrow-right"></i> 下一关
-                </button>
-            </div>
-        </div>
-
-        <div class="result-container" id="resultContainer">
-            <div class="result-box">
-                <div class="result-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="result-text" id="resultContent">
-                    正确：Flag为 <span class="flag" id="flagContent">等待验证...</span>
-                </div>
-            </div>
-        </div>
+    <div id="map">
+        <canvas id="circle-canvas"></canvas>
     </div>
 
+    <button id="panel-toggle" class="panel-toggle" aria-label="打开面板">
+        <i class="fas fa-layer-group"></i>
+    </button>
+
+    <aside id="panel" class="panel">
+        <div class="panel-header">
+            <div class="panel-title"><i class="fas fa-bullseye"></i>同心圆绘制</div>
+            <button class="panel-close" id="panel-close" aria-label="关闭面板"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" id="search-input" placeholder="搜索地点..." autocomplete="off">
+            <div class="search-results" id="search-results"></div>
+        </div>
+        <div class="section">
+            <div class="map-style-toggle">
+                <button class="map-style-btn" data-style="style2">墨渊</button>
+                <button class="map-style-btn active" data-style="style1">标准</button>
+                <button class="map-style-btn" data-style="satellite">卫星</button>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-label">新圆参数</div>
+            <div class="input-row">
+                <label>最大半径</label>
+                <div class="num-input-wrap">
+                    <input type="number" class="num-input" id="new-radius" value="5000" min="1" step="1" placeholder="输入半径">
+                    <select class="unit-select" id="new-radius-unit"><option value="m" selected>m</option><option value="km">km</option></select>
+                </div>
+            </div>
+            <div class="input-row">
+                <label>圆间距</label>
+                <div class="num-input-wrap">
+                    <input type="number" class="num-input" id="new-interval" value="1000" min="1" step="1" placeholder="输入间距">
+                    <select class="unit-select" id="new-interval-unit"><option value="m" selected>m</option><option value="km">km</option></select>
+                </div>
+            </div>
+            <div class="hint" style="margin-top:4px">设置参数后，点击地图放置圆心</div>
+        </div>
+        <div class="section" id="selected-section">
+            <div class="section-label">选中圆参数</div>
+            <div id="selected-content"><div class="no-selection">点击地图上的圆心以选中</div></div>
+        </div>
+        <div class="section">
+            <div class="section-label">已绘制 (<span id="circle-count">0</span>)</div>
+            <div class="circle-list" id="circle-list"><div class="empty-state">暂无同心圆</div></div>
+        </div>
+        <div class="section">
+            <button class="btn btn-ghost" id="btn-clear-all"><i class="fas fa-trash-alt"></i>清除全部</button>
+        </div>
+    </aside>
+
+    <div class="status-bar"><span id="status-text">点击地图放置圆心</span></div>
+    <div class="coords-bar"><span id="coords-text">23.12910°, 113.26440°</span></div>
+    <div class="zoom-hint" id="zoom-hint"><i class="fas fa-search-plus"></i>放大地图以显示同心圆</div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const answerInput = document.getElementById('answerInput');
-            const resultContainer = document.getElementById('resultContainer');
-            const flagContent = document.getElementById('flagContent');
-            const nextBtn = document.getElementById('nextLevelBtn');
+    (function(){
+        'use strict';
 
-            // 输入框聚焦时添加动画
-            answerInput.addEventListener('focus', function() {
-                this.parentElement.style.boxShadow = '0 4px 20px rgba(30, 60, 114, 0.25)';
-                this.parentElement.style.borderColor = '#1e3c72';
+        var MIN_DRAW_PX = 4;
+        var circles = [];
+        var selectedId = null;
+        var nextIndex = 1;
+        var PICK_THRESHOLD = 22;
+
+        var mapEl = document.getElementById('map');
+        var canvas = document.getElementById('circle-canvas');
+        var panel = document.getElementById('panel');
+        var panelToggle = document.getElementById('panel-toggle');
+        var panelClose = document.getElementById('panel-close');
+        var coordsText = document.getElementById('coords-text');
+        var selectedContent = document.getElementById('selected-content');
+        var circleList = document.getElementById('circle-list');
+        var circleCount = document.getElementById('circle-count');
+        var searchInput = document.getElementById('search-input');
+        var searchResults = document.getElementById('search-results');
+        var btnClearAll = document.getElementById('btn-clear-all');
+        var newRadiusInput = document.getElementById('new-radius');
+        var newRadiusUnit = document.getElementById('new-radius-unit');
+        var newIntervalInput = document.getElementById('new-interval');
+        var newIntervalUnit = document.getElementById('new-interval-unit');
+        var zoomHint = document.getElementById('zoom-hint');
+
+        var map;
+
+        // 辅助函数：获取地图投影
+        function getMapProjection() {
+            return map ? map.getProjection() : null;
+        }
+
+        // 辅助函数：经纬度转容器像素坐标
+        function latLngToContainerPoint(latLng) {
+            var projection = getMapProjection();
+            if (!projection) return null;
+            
+            // 获取世界坐标（缩放级别0时的坐标）
+            var worldPoint = projection.fromLatLngToPoint(latLng);
+            if (!worldPoint) return null;
+            
+            // 获取当前地图的缩放级别和中心点
+            var zoom = map.getZoom();
+            var center = map.getCenter();
+            var centerWorldPoint = projection.fromLatLngToPoint(center);
+            
+            if (!centerWorldPoint) return null;
+            
+            // 计算地图容器的中心像素坐标
+            var containerWidth = mapEl.offsetWidth;
+            var containerHeight = mapEl.offsetHeight;
+            var centerX = containerWidth / 2;
+            var centerY = containerHeight / 2;
+            
+            // 计算缩放因子
+            var scale = Math.pow(2, zoom);
+            
+            // 计算相对于中心点的像素偏移
+            var dx = (worldPoint.x - centerWorldPoint.x) * scale;
+            var dy = (worldPoint.y - centerWorldPoint.y) * scale;
+            
+            return {
+                x: centerX + dx,
+                y: centerY + dy
+            };
+        }
+
+        function initMap() {
+            map = new qq.maps.Map('map', {
+                center: new qq.maps.LatLng(23.1291, 113.2644),
+                zoom: 12,
+                mapTypeControl: false,
+                zoomControl: true
             });
 
-            answerInput.addEventListener('blur', function() {
-                this.parentElement.style.boxShadow = '0 4px 15px rgba(30, 60, 114, 0.15)';
-                this.parentElement.style.borderColor = '#d0d9ff';
+            qq.maps.event.addListener(map, 'click', onMapClick);
+            qq.maps.event.addListener(map, 'mousemove', onMapMouseMove);
+            qq.maps.event.addListener(map, 'zoom_changed', scheduleRedraw);
+            qq.maps.event.addListener(map, 'drag', scheduleRedraw);
+            qq.maps.event.addListener(map, 'zoomend', scheduleRedraw);
+            qq.maps.event.addListener(map, 'dragend', scheduleRedraw);
+
+            document.querySelectorAll('.map-style-btn').forEach(function(btn){
+                btn.addEventListener('click', function(){ 
+                    var style = btn.dataset.style;
+                    if (style === 'style2') {
+                        map.setMapTypeId(qq.maps.MapTypeId.NORMAL);
+                    } else if (style === 'satellite') {
+                        map.setMapTypeId(qq.maps.MapTypeId.SATELLITE);
+                    } else {
+                        map.setMapTypeId(qq.maps.MapTypeId.NORMAL);
+                    }
+                    document.querySelectorAll('.map-style-btn').forEach(function(b){ b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    scheduleRedraw();
+                });
             });
-        });
 
-        function checkAnswer() {
-            const answer = document.getElementById('answerInput').value.trim();
-            const resultContainer = document.getElementById('resultContainer');
-            const flagContent = document.getElementById('flagContent');
-            const nextBtn = document.getElementById('nextLevelBtn');
+            resizeCanvas();
+            scheduleRedraw();
+            updateCircleList();
+            
+            // 测试坐标转换是否正常工作
+            setTimeout(function(){
+                var testCenter = map.getCenter();
+                var projection = map.getProjection();
+                if (!projection) {
+                    showToast('地图投影未初始化，请刷新页面重试');
+                    return;
+                }
+                var testPixel = projection.fromLatLngToPoint(testCenter);
+                console.log('Map center:', testCenter.getLat(), testCenter.getLng());
+                console.log('Pixel:', testPixel);
+                if (!testPixel || typeof testPixel.x !== 'number') {
+                    showToast('地图坐标转换异常，请刷新页面重试');
+                }
+            }, 1000);
+            
+            setTimeout(function(){showToast('设置半径和间距后，点击地图放置同心圆');},800);
+        }
 
-            if (!answer) {
-                flagContent.textContent = '请输入答案';
-                resultContainer.classList.add('show');
+        function onMapMouseMove(e) {
+            if (!e.latLng) return;
+            var lat = e.latLng.getLat().toFixed(5);
+            var lng = e.latLng.getLng().toFixed(5);
+            coordsText.textContent = lat + '°, ' + lng + '°';
+        }
+
+        function onMapClick(e) {
+            // 腾讯地图v2点击事件通过e.latLng获取坐标
+            var latLng = e.latLng;
+            if (!latLng) {
+                showToast('无法获取点击位置');
                 return;
             }
-
-            if (answer.toLowerCase() === '真我') {
-                // 显示结果
-                flagContent.textContent = '17029318e8be515c846a8c56e31f92da';
-                resultContainer.classList.add('show');
-
-                // 显示下一关按钮
-                setTimeout(() => {
-                    nextBtn.classList.add('show');
-                }, 500);
-
-                // 添加庆祝效果
-                createConfetti();
-            } else {
-                flagContent.textContent = '答案错误，请继续加油';
-                resultContainer.classList.add('show');
-
-                // 错误提示动画
-                const inputContainer = document.querySelector('.input-container');
-                inputContainer.style.animation = 'shake 0.5s';
-                setTimeout(() => {
-                    inputContainer.style.animation = '';
-                }, 500);
-            }
-        }
-
-        function goNext() {
-            // 跳转到下一关
-            window.location.href = "index1.html";
-        }
-
-        function createConfetti() {
-            const container = document.querySelector('.container');
-            const confettiCount = 50;
-            const confettiIcons = ['🎉', '✨', '🎊', '🌟', '💻', '✅', '🏆', '🚀'];
-
-            for (let i = 0; i < confettiCount; i++) {
-                const confetti = document.createElement('div');
-                confetti.innerHTML = confettiIcons[Math.floor(Math.random() * confettiIcons.length)];
-                confetti.style.position = 'absolute';
-                confetti.style.fontSize = '24px';
-                confetti.style.left = Math.random() * 100 + '%';
-                confetti.style.top = '-30px';
-                confetti.style.opacity = '0';
-                confetti.style.zIndex = '9999';
-                confetti.style.animation = `confettiFall ${Math.random() * 3 + 2}s linear forwards`;
-                container.appendChild(confetti);
-
-                // 设置随机动画延迟
-                confetti.style.animationDelay = Math.random() * 1 + 's';
-
-                // 移除元素
-                setTimeout(() => {
-                    confetti.remove();
-                }, 5000);
-            }
-
-            // 添加shake动画
-            const style = document.createElement('style');
-            style.innerHTML = `
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
-                    20%, 40%, 60%, 80% { transform: translateX(8px); }
+            
+            // 检查是否点击了现有圆心
+            for (var i=0;i<circles.length;i++) {
+                var c=circles[i];
+                var center = new qq.maps.LatLng(c.center.lat, c.center.lng);
+                var pixelCenter = latLngToContainerPoint(center);
+                var pixelPoint = latLngToContainerPoint(latLng);
+                if (!pixelCenter || !pixelPoint) continue;
+                var dx = pixelPoint.x - pixelCenter.x;
+                var dy = pixelPoint.y - pixelCenter.y;
+                if (Math.sqrt(dx*dx + dy*dy) < PICK_THRESHOLD) {
+                    selectCircle(c.id); return;
                 }
-            `;
-            document.head.appendChild(style);
+            }
+            
+            var mr=readM(newRadiusInput,newRadiusUnit), iv=readM(newIntervalInput,newIntervalUnit);
+            if (isNaN(mr)||mr<=0) { newRadiusInput.classList.add('invalid'); showToast('请输入有效的最大半径'); setTimeout(function(){newRadiusInput.classList.remove('invalid');},1500); return; }
+            if (isNaN(iv)||iv<=0) { newIntervalInput.classList.add('invalid'); showToast('请输入有效的圆间距'); setTimeout(function(){newIntervalInput.classList.remove('invalid');},1500); return; }
+            if (iv>mr) { newIntervalInput.classList.add('invalid'); showToast('圆间距不能大于最大半径'); setTimeout(function(){newIntervalInput.classList.remove('invalid');},1500); return; }
+
+            var nc = { 
+                id: Date.now(), 
+                center: { lat: latLng.getLat(), lng: latLng.getLng() }, 
+                maxRadius: Math.round(mr), 
+                interval: Math.round(iv) 
+            };
+            circles.push(nc);
+            selectCircle(nc.id);
+            nextIndex++;
+            updateCircleList();
+            scheduleRedraw();
+            showToast('已创建同心圆，半径 ' + formatDist(nc.maxRadius));
+            autoZoom(nc);
         }
+
+        function autoZoom(c) {
+            var tgt = Math.min(mapEl.offsetWidth, mapEl.offsetHeight) * 0.4;
+            var cur = metersToPixels(c.maxRadius, new qq.maps.LatLng(c.center.lat, c.center.lng));
+            if (cur < MIN_DRAW_PX || cur < tgt * 0.3) {
+                if (cur > 0.1) {
+                    var d = Math.ceil(Math.log2(tgt / cur));
+                    map.setZoom(Math.min(18, map.getZoom() + d));
+                    map.setCenter(new qq.maps.LatLng(c.center.lat, c.center.lng));
+                } else {
+                    map.setZoom(10);
+                    map.setCenter(new qq.maps.LatLng(c.center.lat, c.center.lng));
+                }
+            }
+        }
+
+        function metersToPixels(m, center) {
+            if (m <= 0) return 0;
+            
+            // 使用地图缩放级别计算像素距离
+            // 在缩放级别 z 时，1像素对应的地面距离约为：156543.03392 * cos(纬度) / (2^z) 米
+            var zoom = map.getZoom();
+            var lat = center.getLat();
+            
+            // 计算当前缩放级别下，1像素对应的地面距离（米）
+            var metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+            
+            // 将米转换为像素
+            var pixels = m / metersPerPixel;
+            
+            console.log('metersToPixels:', {m, zoom, lat, metersPerPixel, pixels});
+            return pixels;
+        }
+
+        function resizeCanvas() {
+            var dpr = window.devicePixelRatio || 1;
+            canvas.width = mapEl.offsetWidth * dpr;
+            canvas.height = mapEl.offsetHeight * dpr;
+            canvas.style.width = mapEl.offsetWidth + 'px';
+            canvas.style.height = mapEl.offsetHeight + 'px';
+        }
+
+        function scheduleRedraw() {
+            requestAnimationFrame(redraw);
+        }
+
+        function redraw() {
+            resizeCanvas();
+            var dpr = window.devicePixelRatio || 1;
+            var ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, mapEl.offsetWidth, mapEl.offsetHeight);
+            
+            var vis = false;
+            for (var i = 0; i < circles.length; i++) {
+                var c = circles[i];
+                if (drawC(ctx, new qq.maps.LatLng(c.center.lat, c.center.lng), c.maxRadius, c.interval, c.id === selectedId)) vis = true;
+            }
+            zoomHint.classList.toggle('show', circles.length > 0 && !vis);
+        }
+
+        function drawC(ctx, center, maxR, intv, sel) {
+            var cp = latLngToContainerPoint(center);
+            // 检查坐标转换是否成功
+            if (!cp || typeof cp.x !== 'number' || typeof cp.y !== 'number') {
+                console.log('latLngToContainerPoint failed:', center, cp);
+                return false;
+            }
+            var cpx = cp.x;
+            var cpy = cp.y;
+            var mp = metersToPixels(maxR, center);
+            var ip = metersToPixels(intv, center);
+            console.log('drawC:', {cpx, cpy, mp, ip, maxR, intv, center: {lat: center.getLat(), lng: center.getLng()}});
+            if (mp < MIN_DRAW_PX) {
+                console.log('mp too small:', mp, '<', MIN_DRAW_PX);
+                return false;
+            }
+
+            var dr = ip >= 2;
+            var nr = dr ? Math.max(1, Math.floor(mp / ip)) : 0;
+
+            var fl = 'rgba(70,140,220,0.08)';
+            var al = 'rgba(70,140,220,0.05)';
+            var rn = 'rgba(15,50,120,0.32)';
+            var ou = 'rgba(10,35,90,0.55)';
+            var ds = sel ? 'rgba(0,160,130,0.4)' : 'rgba(15,50,120,0.25)';
+            var df = sel ? '#00a082' : 'rgba(15,50,120,0.8)';
+            var sr = 'rgba(0,160,130,0.5)';
+
+            ctx.beginPath();
+            ctx.arc(cpx, cpy, Math.max(1, mp), 0, Math.PI * 2);
+            ctx.fillStyle = fl;
+            ctx.fill();
+
+            if (dr) {
+                for (var i = nr; i >= 1; i--) {
+                    var ro = i * ip, ri = (i - 1) * ip;
+                    if (ro > mp) continue;
+                    if (i % 2 === 0) {
+                        ctx.beginPath();
+                        ctx.arc(cpx, cpy, Math.max(1, ro), 0, Math.PI * 2);
+                        ctx.arc(cpx, cpy, Math.max(0.5, ri), 0, Math.PI * 2, true);
+                        ctx.fillStyle = al;
+                        ctx.fill();
+                    }
+                }
+            }
+
+            if (dr) {
+                ctx.strokeStyle = rn;
+                ctx.lineWidth = 1.2;
+                for (var j = 1; j <= nr; j++) {
+                    var r = j * ip;
+                    if (r > mp) break;
+                    ctx.beginPath();
+                    ctx.arc(cpx, cpy, Math.max(1, r), 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.beginPath();
+            ctx.arc(cpx, cpy, Math.max(1, mp), 0, Math.PI * 2);
+            ctx.strokeStyle = ou;
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+
+            if (sel) {
+                ctx.beginPath();
+                ctx.arc(cpx, cpy, Math.max(1, mp + 5), 0, Math.PI * 2);
+                ctx.strokeStyle = sr;
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([7, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            ctx.beginPath();
+            ctx.arc(cpx, cpy, sel ? 9 : 6, 0, Math.PI * 2);
+            ctx.strokeStyle = ds;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cpx, cpy, sel ? 5 : 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = df;
+            ctx.fill();
+
+            return true;
+        }
+
+        function formatDist(m) {
+            if (m >= 1000) {
+                var k = m / 1000;
+                return k >= 100 ? k.toFixed(0) + ' km' : k.toFixed(1) + ' km';
+            }
+            return Math.round(m) + ' m';
+        }
+
+        function formatCoord(lat, lng) {
+            return lat.toFixed(4) + '\u00b0, ' + lng.toFixed(4) + '\u00b0';
+        }
+
+        function readM(i, s) {
+            var v = parseFloat(i.value);
+            return (isNaN(v) || v <= 0) ? NaN : (s.value === 'km' ? v * 1000 : v);
+        }
+
+        function writeM(i, s, m) {
+            if (m >= 1000) {
+                i.value = m >= 100000 ? Math.round(m / 1000) : parseFloat((m / 1000).toFixed(2));
+                s.value = 'km';
+            } else {
+                i.value = Math.round(m);
+                s.value = 'm';
+            }
+        }
+
+        function selectCircle(id) {
+            selectedId = id;
+            updateSelPanel();
+            updateCircleList();
+            scheduleRedraw();
+            if (id !== null) {
+                var c = getSel();
+                if (c) map.setCenter(new qq.maps.LatLng(c.center.lat, c.center.lng));
+            }
+        }
+
+        function deleteCircle(id) {
+            circles = circles.filter(function(c) { return c.id !== id; });
+            if (selectedId === id) selectedId = null;
+            updateSelPanel();
+            updateCircleList();
+            scheduleRedraw();
+            showToast('已删除');
+        }
+
+        function getSel() {
+            for (var i = 0; i < circles.length; i++)
+                if (circles[i].id === selectedId) return circles[i];
+            return null;
+        }
+
+        function updateSelPanel() {
+            var c = getSel();
+            if (!c) {
+                selectedContent.innerHTML = '<div class="no-selection">点击地图上的圆心以选中</div>';
+                return;
+            }
+            var n = Math.max(1, Math.floor(c.maxRadius / c.interval));
+            selectedContent.innerHTML =
+                '<div class="input-row"><label>最大半径</label><div class="num-input-wrap">' +
+                '<input type="number" class="num-input" id="er" min="1" step="1">' +
+                '<select class="unit-select" id="eru"><option value="m">m</option><option value="km">km</option></select></div></div>' +
+                '<div class="input-row"><label>圆间距</label><div class="num-input-wrap">' +
+                '<input type="number" class="num-input" id="ei" min="1" step="1">' +
+                '<select class="unit-select" id="eiu"><option value="m">m</option><option value="km">km</option></select></div></div>' +
+                '<div class="ring-count">共 <strong>' + n + '</strong> 个圈</div>' +
+                '<div style="margin-top:4px;font-size:11px;color:var(--muted)">圆心：' + formatCoord(c.center.lat, c.center.lng) + '</div>' +
+                '<div style="margin-top:12px"><button class="btn btn-danger" id="bds"><i class="fas fa-times"></i> 删除此圆</button></div>';
+            
+            var eR = document.getElementById('er'), eRU = document.getElementById('eru');
+            var eI = document.getElementById('ei'), eIU = document.getElementById('eiu');
+            writeM(eR, eRU, c.maxRadius);
+            writeM(eI, eIU, c.interval);
+            
+            function apply() {
+                var mr = readM(eR, eRU), iv = readM(eI, eIU);
+                if (isNaN(mr) || mr <= 0 || isNaN(iv) || iv <= 0 || iv > mr) return;
+                c.maxRadius = Math.round(mr);
+                c.interval = Math.round(iv);
+                var nn = Math.max(1, Math.floor(c.maxRadius / c.interval));
+                selectedContent.querySelector('.ring-count').innerHTML = '共 <strong>' + nn + '</strong> 个圈';
+                updateCircleList();
+                scheduleRedraw();
+            }
+            eR.addEventListener('input', apply);
+            eRU.addEventListener('change', apply);
+            eI.addEventListener('input', apply);
+            eIU.addEventListener('change', apply);
+            document.getElementById('bds').addEventListener('click', function() { deleteCircle(c.id); });
+        }
+
+        function updateCircleList() {
+            circleCount.textContent = circles.length;
+            if (!circles.length) {
+                circleList.innerHTML = '<div class="empty-state">暂无同心圆</div>';
+                return;
+            }
+            var h = '';
+            for (var i = 0; i < circles.length; i++) {
+                var c = circles[i], a = c.id === selectedId, n = Math.max(1, Math.floor(c.maxRadius / c.interval));
+                h += '<div class="circle-item ' + (a ? 'active' : '') + '" data-id="' + c.id + '"><div class="circle-dot"></div>' +
+                    '<div class="circle-info"><div class="circle-info-name">圆心 #' + (i + 1) + '</div>' +
+                    '<div class="circle-info-meta">' + formatDist(c.maxRadius) + ' \u00b7 ' + n + '圈 \u00b7 ' + formatCoord(c.center.lat, c.center.lng) + '</div></div>' +
+                    '<button class="circle-del" data-del="' + c.id + '" aria-label="删除"><i class="fas fa-times"></i></button></div>';
+            }
+            circleList.innerHTML = h;
+            circleList.querySelectorAll('.circle-item').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    if (!e.target.closest('.circle-del')) selectCircle(parseInt(item.dataset.id));
+                });
+            });
+            circleList.querySelectorAll('.circle-del').forEach(function(btn) {
+                btn.addEventListener('click', function() { deleteCircle(parseInt(btn.dataset.del)); });
+            });
+        }
+
+        panelClose.addEventListener('click', function() {
+            panel.classList.add('hidden');
+            panelToggle.classList.add('visible');
+        });
+        panelToggle.addEventListener('click', function() {
+            panel.classList.remove('hidden');
+            panelToggle.classList.remove('visible');
+        });
+        btnClearAll.addEventListener('click', function() {
+            if (!circles.length) return;
+            circles = [];
+            selectedId = null;
+            nextIndex = 1;
+            updateSelPanel();
+            updateCircleList();
+            scheduleRedraw();
+            showToast('已清除全部');
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && selectedId !== null) selectCircle(null);
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null
+                && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT')
+                deleteCircle(selectedId);
+        });
+
+        function showToast(msg, dur) {
+            dur = dur || 2200;
+            var t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() { t.classList.add('show'); });
+            });
+            setTimeout(function() {
+                t.classList.remove('show');
+                setTimeout(function() { t.remove(); }, 300);
+            }, dur);
+        }
+
+        window.addEventListener('resize', function() {
+            resizeCanvas();
+            scheduleRedraw();
+        });
+
+        initMap();
+    })();
     </script>
 </body>
 </html>
