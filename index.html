@@ -92,18 +92,25 @@
         点击地图上的任意位置选择中心点
       </div>
 
-      <!-- 智能坐标解析 -->
+      <!-- 智能坐标解析 + 位置标记 -->
       <div class="parse-section">
         <div class="parse-row">
           <div class="parse-input-wrap">
             <input type="text" id="parse-input" class="parse-input" placeholder="粘贴坐标，如：23.1291, 113.2644" enterkeyhint="done">
           </div>
         </div>
-        <!-- #14 — 设为我的位置 -->
-        <button id="set-mypos-btn" class="btn-setpos">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-          设为我当前位置
-        </button>
+        <div class="parse-actions">
+          <button id="set-mypos-btn" class="btn-setpos">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            设为我的位置
+          </button>
+          <button id="target-set-btn" class="btn-setpos btn-target">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            标记对方
+          </button>
+          <button id="target-clear-btn" class="btn-setpos btn-target-clear" disabled>清除</button>
+        </div>
+        <div class="target-info" id="target-info"></div>
       </div>
 
       <!-- 半径设置 -->
@@ -181,20 +188,6 @@
         </div>
       </div>
 
-      <!-- 对方位置 -->
-      <div class="target-section">
-        <div class="target-header">
-          <span class="field-label">对方位置</span>
-          <button id="target-clear-btn" class="btn-sm" disabled>清除</button>
-        </div>
-        <div class="target-row">
-          <input type="number" id="target-lat" class="coord-input target-input" step="any" placeholder="纬度" inputmode="decimal">
-          <input type="number" id="target-lng" class="coord-input target-input" step="any" placeholder="经度" inputmode="decimal">
-          <button id="target-set-btn" class="btn-sm btn-primary-sm">标记</button>
-        </div>
-        <div class="target-info" id="target-info"></div>
-      </div>
-
       <!-- 圆列表 -->
       <div class="circle-list-section">
         <div class="circle-list-header">
@@ -248,13 +241,13 @@
   <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77&libraries=geometry,convertor"></script>
 
   <!-- 应用脚本 -->
-  <script src="js/config.js?t=20260701v7"></script>
-  <script src="js/toast.js?t=20260701v7"></script>
-  <script src="js/storage.js?t=20260701v7"></script>
-  <script src="js/trail.js?t=20260701v7"></script>
-  <script src="js/gpx.js?t=20260701v7"></script>
-  <script src="js/map.js?t=20260701v7"></script>
-  <script src="js/gps.js?t=20260701v7"></script>
-  <script src="js/app.js?t=20260701v7"></script>
+  <script src="js/config.js?t=20260701v8"></script>
+  <script src="js/toast.js?t=20260701v8"></script>
+  <script src="js/storage.js?t=20260701v8"></script>
+  <script src="js/trail.js?t=20260701v8"></script>
+  <script src="js/gpx.js?t=20260701v8"></script>
+  <script src="js/map.js?t=20260701v8"></script>
+  <script src="js/gps.js?t=20260701v8"></script>
+  <script src="js/app.js?t=20260701v8"></script>
 </body>
 </html>

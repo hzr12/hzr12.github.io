@@ -725,12 +725,16 @@ input[type="number"] {
   font-family: var(--font-sans);
 }
 
-/* #14 — 设为我当前位置按钮 */
+/* #14 — 坐标操作按钮组 */
+.parse-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
 .btn-setpos {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-top: 6px;
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -744,6 +748,27 @@ input[type="number"] {
 .btn-setpos:active {
   background: rgba(0, 163, 255, 0.16);
   transform: scale(0.97);
+}
+.btn-target {
+  color: var(--accent-1);
+  background: rgba(0, 212, 170, 0.08);
+  border-color: rgba(0, 212, 170, 0.18);
+}
+.btn-target:active {
+  background: rgba(0, 212, 170, 0.16);
+}
+.btn-target-clear {
+  color: var(--danger);
+  background: rgba(255, 71, 87, 0.08);
+  border-color: rgba(255, 71, 87, 0.18);
+}
+.btn-target-clear:active {
+  background: rgba(255, 71, 87, 0.16);
+}
+.btn-target-clear:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ---------- 半径设置 ---------- */
@@ -995,33 +1020,7 @@ input[type="number"] {
   color: var(--accent-1);
 }
 
-/* ---------- 对方位置 ---------- */
-.target-section {
-  margin-bottom: 14px;
-}
-.target-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-.target-row {
-  display: flex;
-  gap: 6px;
-}
-.target-input {
-  flex: 1;
-  min-width: 0;
-}
-.btn-primary-sm {
-  background: rgba(0, 212, 170, 0.15);
-  color: var(--accent-1);
-  border-color: rgba(0, 212, 170, 0.4);
-  cursor: pointer;
-}
-.btn-primary-sm:hover {
-  background: rgba(0, 212, 170, 0.25);
-}
+/* ---------- 对方位置信息 ---------- */
 .target-info {
   margin-top: 4px;
   font-size: 11px;

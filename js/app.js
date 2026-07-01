@@ -294,9 +294,7 @@ class App {
     document.getElementById('trail-stats-btn').addEventListener('click', () => this._showTrailStats());
     document.getElementById('trail-smooth-btn').addEventListener('click', () => this._toggleTrailSmoothing());
 
-    // —— 对方位置标记 ——
-    this._targetLatInput = document.getElementById('target-lat');
-    this._targetLngInput = document.getElementById('target-lng');
+    // —— 对方位置标记（复用坐标输入区） ——
     this._targetInfoEl = document.getElementById('target-info');
     this._targetClearBtn = document.getElementById('target-clear-btn');
     document.getElementById('target-set-btn').addEventListener('click', () => this._setTargetPosition());
@@ -1136,17 +1134,16 @@ class App {
    * 设置对方位置标记
    */
   _setTargetPosition() {
-    const lat = parseFloat(this._targetLatInput.value);
-    const lng = parseFloat(this._targetLngInput.value);
+    const lat = parseFloat(this._latInput.value);
+    const lng = parseFloat(this._lngInput.value);
     if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      Toast.show('⚠️ 请输入有效的对方坐标');
+      Toast.show('⚠️ 请输入有效的坐标');
       return;
     }
     this._targetPos = { lat, lng };
     this.mapManager.setTarget(this._targetPos);
     this._targetClearBtn.disabled = false;
     this._targetInfoEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    // 计算与我的距离
     if (this.myPosition) {
       const dist = calcDistance(this.myPosition, this._targetPos);
       this._targetInfoEl.textContent += ` · 距我 ${formatDistance(dist)}`;
@@ -1162,8 +1159,6 @@ class App {
     this.mapManager.setTarget(null);
     this._targetClearBtn.disabled = true;
     this._targetInfoEl.textContent = '';
-    this._targetLatInput.value = '';
-    this._targetLngInput.value = '';
   }
 
   /**
