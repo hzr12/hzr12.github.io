@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>鬼抓人——地图雷达</title>
@@ -38,6 +38,12 @@
 
     <div class="panel-header">
       <h1 class="panel-title">鬼抓人——地图雷达</h1>
+      <button id="theme-btn" class="theme-toggle" title="切换浅色主题">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
     </div>
 
     <div class="panel-body">
@@ -93,6 +99,11 @@
             <input type="text" id="parse-input" class="parse-input" placeholder="粘贴坐标，如：23.1291, 113.2644" enterkeyhint="done">
           </div>
         </div>
+        <!-- #14 — 设为我的位置 -->
+        <button id="set-mypos-btn" class="btn-setpos">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          设为我当前位置
+        </button>
       </div>
 
       <!-- 半径设置 -->
@@ -113,6 +124,14 @@
             <span>10km</span>
             <span>50km</span>
           </div>
+        </div>
+        <div class="radius-presets">
+          <button class="preset-btn" data-radius="100">100m</button>
+          <button class="preset-btn" data-radius="500">500m</button>
+          <button class="preset-btn" data-radius="1000">1km</button>
+          <button class="preset-btn" data-radius="3000">3km</button>
+          <button class="preset-btn" data-radius="5000">5km</button>
+          <button class="preset-btn" data-radius="10000">10km</button>
         </div>
       </div>
 
@@ -146,8 +165,34 @@
             <span class="trail-dot"></span> 开始记录
           </button>
           <button id="trail-clear-btn" class="btn btn-secondary btn-sm" disabled>清除</button>
-          <button id="trail-export-btn" class="btn btn-secondary btn-sm" disabled>导出 GPX</button>
+          <button id="trail-export-btn" class="btn btn-secondary btn-sm" disabled>GPX</button>
         </div>
+        <div class="trail-actions">
+          <button id="trail-stats-btn" class="btn-sm" disabled>📊 统计</button>
+          <button id="trail-smooth-btn" class="btn-sm active">✨ 平滑</button>
+        </div>
+        <!-- 速度色阶图例 -->
+        <div class="speed-legend">
+          <span class="speed-legend-item"><i style="background:rgba(80,160,255,0.85)"></i>0-0.5</span>
+          <span class="speed-legend-item"><i style="background:rgba(0,212,170,0.9)"></i>0.5-1.5</span>
+          <span class="speed-legend-item"><i style="background:rgba(180,200,50,0.9)"></i>1.5-3</span>
+          <span class="speed-legend-item"><i style="background:rgba(255,140,40,0.95)"></i>3-5</span>
+          <span class="speed-legend-item"><i style="background:rgba(255,60,60,1)"></i>&gt;5 m/s</span>
+        </div>
+      </div>
+
+      <!-- 对方位置 -->
+      <div class="target-section">
+        <div class="target-header">
+          <span class="field-label">对方位置</span>
+          <button id="target-clear-btn" class="btn-sm" disabled>清除</button>
+        </div>
+        <div class="target-row">
+          <input type="number" id="target-lat" class="coord-input target-input" step="any" placeholder="纬度" inputmode="decimal">
+          <input type="number" id="target-lng" class="coord-input target-input" step="any" placeholder="经度" inputmode="decimal">
+          <button id="target-set-btn" class="btn-sm btn-primary-sm">标记</button>
+        </div>
+        <div class="target-info" id="target-info"></div>
       </div>
 
       <!-- 圆列表 -->
@@ -200,12 +245,16 @@
   </div>
 
   <!-- Tencent Map API -->
-  <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77"></script>
+  <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77&libraries=geometry,convertor"></script>
 
   <!-- 应用脚本 -->
-  <script src="js/config.js?t=20260628v9"></script>
-  <script src="js/map.js?t=20260628v9"></script>
-  <script src="js/gps.js?t=20260628v9"></script>
-  <script src="js/app.js?t=20260628v9"></script>
+  <script src="js/config.js?t=20260701v7"></script>
+  <script src="js/toast.js?t=20260701v7"></script>
+  <script src="js/storage.js?t=20260701v7"></script>
+  <script src="js/trail.js?t=20260701v7"></script>
+  <script src="js/gpx.js?t=20260701v7"></script>
+  <script src="js/map.js?t=20260701v7"></script>
+  <script src="js/gps.js?t=20260701v7"></script>
+  <script src="js/app.js?t=20260701v7"></script>
 </body>
 </html>

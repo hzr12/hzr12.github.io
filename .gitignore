@@ -12,3 +12,6 @@ Thumbs.db
 # Python http server
 __pycache__/
 *.pyc
+
+# changelog — tracked in repo now
+.omo/

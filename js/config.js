@@ -49,7 +49,34 @@ const CONFIG = {
   EARTH_RADIUS: 6371000,
 
   // localStorage 存储键名
-  STORAGE_KEY: 'circlemap_data'
+  STORAGE_KEY: 'circlemap_data',
+
+  // ----- 交互参数 -----
+  INPUT_DEBOUNCE_MS: 400,           // 坐标输入防抖（毫秒）
+  PARSE_DELAY_MS: 300,              // 智能解析防抖（毫秒）
+  LONGPRESS_THRESHOLD_MS: 600,      // GPS 按钮长按判定（毫秒）
+  LOCATED_ANIM_MS: 3000,            // 定位成功按钮高亮（毫秒）
+  EDIT_HIGHLIGHT_MS: 2000,          // 编辑滑块高亮（毫秒）
+
+  // ----- GPS 相关 -----
+  POSITION_STALE_MS: 10 * 60 * 1000,    // 位置过期阈值（10 分钟）
+  RELOCATE_INTERVAL_MS: 5 * 60 * 1000,  // 自动重定位最小间隔（5 分钟）
+
+  // ----- 显示参数 -----
+  STATUS_THROTTLE_MS: 2000,             // 状态条更新节流（毫秒）
+  LIST_THROTTLE_MS: 2000,               // 圆列表更新节流（毫秒）
+  MAX_RECENT_FIXES: 10,                 // 最近定位最大条数
+  MIN_DISPLACEMENT_M: 5,                // 位移重建阈值（米）
+
+  // ----- 轨迹 -----
+  TRAIL_SAMPLE_MIN_DIST: 10,            // 轨迹采样最小间隔（米）
+  TRAIL_MAX_POINTS: 500,                // 轨迹最大点数
+
+  // ----- UI -----
+  MOBILE_BREAKPOINT: 480,               // 移动端断点（像素）
+  DEFAULT_TOAST_DURATION: 3000,         // Toast 默认显示时长（毫秒）
+  TOAST_FADE_MS: 300,                   // Toast 消失动画（毫秒）
+  GPX_URL_REVOKE_DELAY: 5000            // GPX 导出 URL 释放延迟（毫秒）
 };
 
 /**
@@ -59,6 +86,15 @@ const CONFIG = {
  * @returns {number} 距离（米）
  */
 function calcDistance(p1, p2) {
+  try {
+    if (typeof qq !== 'undefined' && qq.maps && qq.maps.spherical) {
+      return qq.maps.spherical.computeDistanceBetween(
+        new qq.maps.LatLng(p1.lat, p1.lng),
+        new qq.maps.LatLng(p2.lat, p2.lng)
+      );
+    }
+  } catch (_) {}
+  // Fallback: 手写 Haversine 公式
   const dLat = (p2.lat - p1.lat) * Math.PI / 180;
   const dLng = (p2.lng - p1.lng) * Math.PI / 180;
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
@@ -68,13 +104,72 @@ function calcDistance(p1, p2) {
 }
 
 /**
+ * 计算从 p1 到 p2 的方位角（正北顺时针）
+ * @param {{lat:number,lng:number}} p1
+ * @param {{lat:number,lng:number}} p2
+ * @returns {number} 角度 0-360（0=正北）
+ */
+function calcBearing(p1, p2) {
+  try {
+    if (typeof qq !== 'undefined' && qq.maps && qq.maps.spherical) {
+      return qq.maps.spherical.computeHeading(
+        new qq.maps.LatLng(p1.lat, p1.lng),
+        new qq.maps.LatLng(p2.lat, p2.lng)
+      );
+    }
+  } catch (_) {}
+  // Fallback: 手写方位角公式
+  const φ1 = p1.lat * Math.PI / 180;
+  const φ2 = p2.lat * Math.PI / 180;
+  const Δλ = (p2.lng - p1.lng) * Math.PI / 180;
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+/**
+ * 方位角转文字方向
+ * @param {number} deg 角度 0-360
+ * @returns {string} 如 "N" / "NE" / "SW"
+ */
+function bearingToDir(deg) {
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+/**
+ * 对数半径映射 — 滑块值 → 实际半径（#11）
+ * 让常用小半径区间占据更多滑块行程
+ * @param {number} sliderVal 0-1 归一化滑块位置
+ * @returns {number} 半径（米）
+ */
+function sliderToRadius(sliderVal) {
+  const minR = CONFIG.MIN_RADIUS;
+  const maxR = CONFIG.MAX_RADIUS;
+  return Math.round(minR + (maxR - minR) * Math.log(1 + 9 * sliderVal) / Math.log(10));
+}
+
+/**
+ * 对数半径映射 — 实际半径 → 滑块归一化值（#11）
+ * @param {number} radius 半径（米）
+ * @returns {number} 0-1 归一化值
+ */
+function radiusToSlider(radius) {
+  const minR = CONFIG.MIN_RADIUS;
+  const maxR = CONFIG.MAX_RADIUS;
+  const t = (Math.max(radius, minR) - minR) / (maxR - minR);
+  return Math.min(1, Math.max(0, (Math.exp(t * Math.log(10)) - 1) / 9));
+}
+
+/**
  * 格式化距离文字
  * @param {number} meters
  * @returns {string}
  */
 function formatDistance(meters) {
-  if (meters < 10) return `${Math.round(meters)}m`;
-  if (meters < 1000) return `${Math.round(meters)}m`;
-  if (meters < 10000) return `${(meters / 1000).toFixed(2)}km`;
-  return `${(meters / 1000).toFixed(1)}km`;
+  const val = Math.round(meters);
+  if (val < 10) return `${val}m`;
+  if (val < 1000) return `${val}m`;
+  if (val < 10000) return `${(val / 1000).toFixed(2)}km`;
+  return `${(val / 1000).toFixed(1)}km`;
 }

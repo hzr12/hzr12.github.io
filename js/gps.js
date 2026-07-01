@@ -16,6 +16,34 @@ class GPSManager {
     this.onError = null;
     this.onWatchStart = null;
     this.onWatchStop = null;
+
+    // 电量监控
+    this._lowBattery = false;
+    this._initBatteryMonitor();
+  }
+
+  /**
+   * 初始化电池监控 — 低电量时降低 GPS 频率
+   */
+  _initBatteryMonitor() {
+    if (!navigator.getBattery) return;
+    navigator.getBattery().then(battery => {
+      const check = () => {
+        const wasLow = this._lowBattery;
+        this._lowBattery = battery.level < 0.2;
+        if (this._lowBattery && !wasLow) {
+          console.warn('[GPS] 电量低于 20%，已降低 GPS 频率');
+        }
+        // 低电量时重启 watchPosition 用新参数
+        if (this.isWatching) {
+          this.stopWatching();
+          this.isWatching = false;
+          this.startWatching({ enableHighAccuracy: false, timeout: 15000, maximumAge: 15000 });
+        }
+      };
+      battery.addEventListener('levelchange', check);
+      check();
+    }).catch(() => {});
   }
 
   /**
@@ -26,7 +54,7 @@ class GPSManager {
   getCurrentPosition(timeout) {
     const t = timeout || CONFIG.GPS_TIMEOUT;
 
-    // 15 秒总超时兜底（比 geolocation timeout 多 5s，防止 GPS 信号弱卡死）
+    // 总超时兜底（比 geolocation timeout 多 5s，防止 GPS 信号弱卡死）
     const fallbackMs = Math.max(t + 5000, 15000);
 
     return new Promise((resolve, reject) => {
@@ -119,6 +147,7 @@ class GPSManager {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
           accuracy: position.coords.accuracy,
+          altitude: position.coords.altitude,
           speed: position.coords.speed,
           heading: position.coords.heading,
           timestamp: position.timestamp
