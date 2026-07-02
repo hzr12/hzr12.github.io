@@ -95,6 +95,9 @@ class App {
     // 暴露到全局，方便控制台模拟轨迹
     window._app = this;
 
+    // 显示当前版本
+    Toast.show('🗺️ Circlemap v20260702v13', 2000)3
+
     // 天气获取
     this._weatherHtml = '';
     this._fetchWeather();
