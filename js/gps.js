@@ -144,7 +144,7 @@ class GPSManager {
     if (!this._downgraded || !this.isWatching) return;
     console.log('[GPS] 尝试恢复高精度定位...');
     try {
-      await this.getCurrentPosition(CONFIG.GPS_TIMEOUT);
+      await this.getCurrentPosition(CONFIG.GPS_WATCH_TIMEOUT);
       // 成功 → 恢复高精度
       this._downgraded = false;
       this._consecutiveTimeouts = 0;
@@ -158,7 +158,7 @@ class GPSManager {
         this.isWatching = false;
         this.startWatching({
           enableHighAccuracy: true,
-          timeout: CONFIG.GPS_TIMEOUT,
+          timeout: CONFIG.GPS_WATCH_TIMEOUT,
           maximumAge: 5000
         });
       }
@@ -269,7 +269,7 @@ class GPSManager {
 
     const opts = Object.assign({
       enableHighAccuracy: true,
-      timeout: CONFIG.GPS_TIMEOUT,
+      timeout: CONFIG.GPS_WATCH_TIMEOUT,
       maximumAge: 5000
     }, options || {});
 
