@@ -728,16 +728,18 @@ input[type="number"] {
 /* #14 — 坐标操作按钮组 */
 .parse-actions {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   margin-top: 6px;
+  flex-wrap: nowrap;
 }
 .btn-setpos {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  font-size: 12px;
+  gap: 3px;
+  padding: 4px 8px;
+  font-size: 10.5px;
   font-weight: 600;
+  white-space: nowrap;
   color: var(--accent-2);
   background: rgba(0, 163, 255, 0.08);
   border: 1px solid rgba(0, 163, 255, 0.18);
