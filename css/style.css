@@ -2002,7 +2002,7 @@ input[type="number"] {
 /* 版本号 */
 .version-footer {
   text-align: center;
-  padding: 8px 0;
+  padding: 8px 0 12px;
   font-size: 11px;
   color: var(--text-tertiary);
   opacity: 0.5;
