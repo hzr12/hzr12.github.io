@@ -95,6 +95,9 @@ class App {
     // 暴露到全局，方便控制台模拟轨迹
     window._app = this;
 
+    // 显示当前版本
+    Toast.show('🗺️ Circlemap v20260702v13', 2000)3
+
     // 天气获取
     this._weatherHtml = '';
     this._fetchWeather();
@@ -692,6 +695,18 @@ class App {
     this.gpsManager.onError = (err) => {
       console.warn('[GPS] 追踪出错:', err.message);
       Toast.show('⚠️ GPS 追踪异常：' + err.message);
+    };
+    this.gpsManager.onDowngrade = (count) => {
+      Toast.show(`⚠️ GPS 信号弱，已切换低精度定位（连续超时 ${count} 次）`);
+      this._updateStatusBar(true);
+    };
+    this.gpsManager.onRecovery = (success) => {
+      if (success) {
+        Toast.show('✅ GPS 信号恢复，已切换高精度定位');
+      } else {
+        Toast.show('⚠️ GPS 信号仍未恢复，继续使用低精度定位');
+      }
+      this._updateStatusBar(true);
     };
     this.gpsManager.startWatching();
 
@@ -1441,6 +1456,7 @@ class App {
     const stale = this._isPositionStale();
     const isTracking = this._isWatching;
     const isManual = this._isManualPosition; // #13
+    const isDowngraded = this.gpsManager.isDowngraded; // GPS 降级状态
     // gps-dot 状态
     let dotClass = '';
     if (stale) {
@@ -1454,6 +1470,7 @@ class App {
     const staleIcon = stale ? ' <span class="gps-stale">⚠️ 已过期</span>' : '';
     const followIcon = this._followMode ? ' <span class="gps-follow">📌 跟随中</span>' : ''; // #12
     const manualIcon = isManual ? ' <span class="gps-manual">📍 手动定位</span>' : ''; // #15
+    const degradedIcon = isDowngraded ? ' <span class="gps-degraded">⚡ 低精度</span>' : '';
 
     // 信号强度（基于 GPS 精度）
     let signalHtml = '';
@@ -1488,7 +1505,7 @@ class App {
     const line3 = this._weatherHtml ? `<div class="gps-line2">${this._weatherHtml}</div>` : '';
 
     this._statusEl.innerHTML =
-      `<div class="gps-line1"><span class="${dotClass}"></span><span class="gps-online">${isManual ? '📍' : '◉'} 已定位</span>${manualIcon}${watchingIcon}${followIcon} <span class="gps-elapsed">(${elapsed})</span>${staleIcon}</div>` +
+      `<div class="gps-line1"><span class="${dotClass}"></span><span class="gps-online">${isManual ? '📍' : '◉'} 已定位</span>${degradedIcon}${manualIcon}${watchingIcon}${followIcon} <span class="gps-elapsed">(${elapsed})</span>${staleIcon}</div>` +
       `<div class="gps-line2">${line2}</div>` +
       line3;
   }

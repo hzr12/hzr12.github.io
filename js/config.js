@@ -30,6 +30,11 @@ const CONFIG = {
 
   // GPS 超时时间（毫秒）
   GPS_TIMEOUT: 10000,
+  GPS_LOW_ACCURACY_TIMEOUT: 5000,        // 降级后 GPS 超时（毫秒）
+
+  // GPS 超时降级
+  GPS_TIMEOUT_MAX_FAILURES: 5,            // 连续超时次数阈值，超过则降级
+  GPS_RECOVERY_INTERVAL_MS: 2 * 60 * 1000, // 降级后每 2 分钟尝试恢复高精度
 
   // 地图缩放级别与半径适配映射
   ZOOM_MAP: [
