@@ -297,8 +297,18 @@ class App {
     // —— 对方位置标记（复用坐标输入区） ——
     this._targetInfoEl = document.getElementById('target-info');
     this._targetClearBtn = document.getElementById('target-clear-btn');
+    this._targetRange = document.getElementById('target-range');
+    this._targetRangeVal = document.getElementById('target-range-val');
     document.getElementById('target-set-btn').addEventListener('click', () => this._setTargetPosition());
     this._targetClearBtn.addEventListener('click', () => this._clearTarget());
+    // 精度范围滑块
+    this._targetRange.addEventListener('input', () => {
+      const v = parseInt(this._targetRange.value);
+      this._targetRangeVal.textContent = v === 0 ? '关' : formatDistance(v);
+      if (this._targetPos) {
+        this.mapManager.setTargetRange(v);
+      }
+    });
 
     // —— GPS 状态条缓存 + #12 点击切换跟随模式 ——
     this._statusEl = document.getElementById('gps-status');
@@ -1141,7 +1151,8 @@ class App {
       return;
     }
     this._targetPos = { lat, lng };
-    this.mapManager.setTarget(this._targetPos);
+    const range = parseInt(this._targetRange.value) || 0;
+    this.mapManager.setTarget(this._targetPos, range);
     this._targetClearBtn.disabled = false;
     this._targetInfoEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     if (this.myPosition) {
@@ -1159,6 +1170,9 @@ class App {
     this.mapManager.setTarget(null);
     this._targetClearBtn.disabled = true;
     this._targetInfoEl.textContent = '';
+    this._targetRange.value = 0;
+    this._targetRangeVal.textContent = '关';
+    this.mapManager.setTargetRange(0);
   }
 
   /**

@@ -1028,6 +1028,52 @@ input[type="number"] {
   font-family: var(--font-mono);
 }
 
+/* 对方精度范围 */
+.target-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.target-range-row .field-label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+.target-range {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-input);
+  outline: none;
+}
+.target-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-1);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 212, 170, 0.3);
+}
+.target-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-1);
+  cursor: pointer;
+  border: none;
+}
+.target-range-val {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--accent-1);
+  font-weight: 600;
+  min-width: 40px;
+  text-align: right;
+}
+
 /* ---------- 圆列表 ---------- */
 .circle-list-section {
   margin-bottom: 14px;

@@ -24,6 +24,8 @@ class MapManager {
     this.locationMarker = null; // 我的位置标记（区别于圆心标识）
     this.accuracyCircle = null; // #17 定位精度圆环
     this.trailPolylines = [];   // 历史轨迹线（多段，按速度着色）
+    this._targetPos = null;    // 对方位置坐标
+    this.targetCircle = null;  // 对方精度范围圈
 
     // 回调钩子
     this.onCenterChange = null;
@@ -901,15 +903,18 @@ class MapManager {
    * 设置/更新对方位置标记
    * @param {{lat:number, lng:number}|null} center 坐标，null 则清除
    */
-  setTarget(center) {
+  setTarget(center, range) {
     if (!this.map) return;
     if (!center) {
+      this._targetPos = null;
       if (this.targetMarker) {
         this.targetMarker.setMap(null);
         this.targetMarker = null;
       }
+      this.setTargetRange(0);
       return;
     }
+    this._targetPos = center;
     const latLng = new qq.maps.LatLng(center.lat, center.lng);
     if (this.targetMarker) {
       this.targetMarker.setPosition(latLng);
@@ -921,6 +926,31 @@ class MapManager {
         icon: this._createTargetIcon()
       });
     }
+    if (range > 0) this.setTargetRange(range);
+  }
+
+  /**
+   * 设置/更新对方位置精度范围圈
+   */
+  setTargetRange(range) {
+    if (!this.map) return;
+    if (this.targetCircle) {
+      this.targetCircle.setMap(null);
+      this.targetCircle = null;
+    }
+    if (!this._targetPos || range <= 0) return;
+    const center = new qq.maps.LatLng(this._targetPos.lat, this._targetPos.lng);
+    this.targetCircle = new qq.maps.Circle({
+      map: this.map,
+      center,
+      radius: range,
+      fillColor: 'rgba(255, 140, 0, 0.08)',
+      fillOpacity: 1,
+      strokeColor: 'rgba(255, 140, 0, 0.4)',
+      strokeWeight: 1.5,
+      strokeDashArray: [6, 4],
+      clickable: false
+    });
   }
 
   destroy() {
@@ -940,6 +970,10 @@ class MapManager {
     if (this.targetMarker) {
       this.targetMarker.setMap(null);
       this.targetMarker = null;
+    }
+    if (this.targetCircle) {
+      this.targetCircle.setMap(null);
+      this.targetCircle = null;
     }
     this._offCanvas = null;
     this.map = null;
