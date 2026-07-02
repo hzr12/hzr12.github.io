@@ -1481,12 +1481,11 @@ class App {
     if (this._lastAltitude != null) {
       line2Parts.push(`<span class="gps-altitude">${Math.round(this._lastAltitude)}m</span>`);
     }
-    // 天气
-    if (this._weatherHtml) line2Parts.push(this._weatherHtml);
+    if (nearStr) line2Parts.push(nearStr);
     const line2 = line2Parts.length ? line2Parts.join(' ｜ ') : '<span style="opacity:0.5">位置待更新</span>';
 
-    // 第三行：最近圆（独立行）
-    const line3 = nearStr ? `<div class="gps-line2">${nearStr}</div>` : '';
+    // 第三行：天气
+    const line3 = this._weatherHtml ? `<div class="gps-line2">${this._weatherHtml}</div>` : '';
 
     this._statusEl.innerHTML =
       `<div class="gps-line1"><span class="${dotClass}"></span><span class="gps-online">${isManual ? '📍' : '◉'} 已定位</span>${manualIcon}${watchingIcon}${followIcon} <span class="gps-elapsed">(${elapsed})</span>${staleIcon}</div>` +
