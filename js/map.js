@@ -944,10 +944,8 @@ class MapManager {
       map: this.map,
       center,
       radius: range,
-      fillColor: '#ff8c00',
-      fillOpacity: 0.08,
-      strokeColor: '#ff8c00',
-      strokeOpacity: 0.4,
+      fillColor: new qq.maps.Color(255, 140, 0, 0.08),
+      strokeColor: new qq.maps.Color(255, 140, 0, 0.4),
       strokeWeight: 1.5,
       strokeDashArray: [6, 4],
       clickable: false
