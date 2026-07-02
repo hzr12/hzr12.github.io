@@ -1998,3 +1998,12 @@ input[type="number"] {
     padding: 10px 8px;
   }
 }
+
+/* 版本号 */
+.version-footer {
+  text-align: center;
+  padding: 8px 0;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
