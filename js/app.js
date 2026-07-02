@@ -1420,23 +1420,6 @@ class App {
     const now = Date.now();
     if (!force && this._lastStatusUpdate && now - this._lastStatusUpdate < CONFIG.STATUS_THROTTLE_MS) return;
     this._lastStatusUpdate = now;
-    // 找最近圆
-    const circles = this.mapManager.getCircles();
-    let nearest = null;
-    let nearDist = Infinity;
-    for (const c of circles) {
-      const d = calcDistance(this.myPosition, c.center);
-      if (d < nearDist) { nearDist = d; nearest = c; }
-    }
-    let nearStr = '';
-    if (nearest) {
-      const { within } = this._calcCircleTrend(nearest);
-      nearStr = within === 'inrange'
-        ? `最近圆 ≤ ${formatDistance(nearest.maxRadius)} ✅`
-        : within === 'maybe'
-          ? `最近圆 ${formatDistance(nearDist)} ⚠️`
-          : `最近圆 ${formatDistance(nearDist)}`;
-    }
     const elapsed = this._formatElapsed();
     const stale = this._isPositionStale();
     const isTracking = this._isWatching;
@@ -1481,7 +1464,6 @@ class App {
     if (this._lastAltitude != null) {
       line2Parts.push(`<span class="gps-altitude">${Math.round(this._lastAltitude)}m</span>`);
     }
-    if (nearStr) line2Parts.push(nearStr);
     // 天气
     if (this._weatherHtml) line2Parts.push(this._weatherHtml);
     const line2 = line2Parts.length ? line2Parts.join(' ｜ ') : '<span style="opacity:0.5">位置待更新</span>';
