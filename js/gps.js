@@ -291,7 +291,21 @@ class GPSManager {
         if (this.onPositionChange) this.onPositionChange(pos);
       },
       (error) => {
-        if (this.onError) this.onError(error);
+        let message;
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            message = '定位权限被拒绝';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            message = '无法获取位置信息（GPS 信号弱或不可用）';
+            break;
+          case error.TIMEOUT:
+            message = '定位请求超时，请确保 GPS 已开启并在室外';
+            break;
+          default:
+            message = '定位失败（未知错误）';
+        }
+        if (this.onError) this.onError(new Error(message));
       },
       opts
     );

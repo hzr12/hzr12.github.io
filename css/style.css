@@ -1998,18 +1998,3 @@ input[type="number"] {
     padding: 10px 8px;
   }
 }
-
-/* 版本号 */
-.version-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  padding: 8px 0;
-  font-size: 11px;
-  color: var(--text-tertiary);
-  opacity: 0.5;
-  z-index: 999;
-  pointer-events: none;
-}
