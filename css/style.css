@@ -403,6 +403,14 @@ input[type="number"] {
   font-weight: 600;
 }
 
+/* GPS 降级（低精度）模式 */
+.gps-degraded {
+  color: var(--warning);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 10px;
+}
+
 .gps-elapsed {
   color: var(--text-tertiary);
   font-family: var(--font-sans);

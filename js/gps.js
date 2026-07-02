@@ -16,6 +16,15 @@ class GPSManager {
     this.onError = null;
     this.onWatchStart = null;
     this.onWatchStop = null;
+    this.onDowngrade = null;   // 降级回调 (timeout) => void
+    this.onRecovery = null;    // 恢复回调 (success: boolean) => void
+
+    // GPS 超时降级状态
+    this._consecutiveTimeouts = 0;  // 连续超时次数
+    this._downgraded = false;       // 是否已降级到低精度
+    this._lastPositionTime = 0;     // 上次收到位置的时间戳
+    this._timeoutCheckId = null;    // 超时检测定时器
+    this._recoveryTimerId = null;   // 恢复尝试定时器
 
     // 电量监控
     this._lowBattery = false;
@@ -44,6 +53,131 @@ class GPSManager {
       battery.addEventListener('levelchange', check);
       check();
     }).catch(() => {});
+  }
+
+  /**
+   * 获取当前生效的 GPS 超时时间
+   */
+  _getCurrentTimeout() {
+    return this._downgraded ? CONFIG.GPS_LOW_ACCURACY_TIMEOUT : CONFIG.GPS_TIMEOUT;
+  }
+
+  /**
+   * 启动超时检测定时器 — 每秒检查是否超时
+   */
+  _startTimeoutWatch() {
+    this._stopTimeoutWatch();
+    this._lastPositionTime = Date.now();
+    this._timeoutCheckId = setInterval(() => {
+      if (!this.isWatching) return;
+      const elapsed = Date.now() - this._lastPositionTime;
+      if (elapsed > this._getCurrentTimeout()) {
+        this._consecutiveTimeouts++;
+        console.warn(`[GPS] 超时 #${this._consecutiveTimeouts}（${(elapsed / 1000).toFixed(0)}s 无新位置）`);
+        if (!this._downgraded && this._consecutiveTimeouts >= CONFIG.GPS_TIMEOUT_MAX_FAILURES) {
+          this._downgrade();
+        }
+        // 重置计时起点，避免下次立即又判定超时
+        this._lastPositionTime = Date.now();
+      }
+    }, 1000);
+  }
+
+  /**
+   * 停止超时检测定时器
+   */
+  _stopTimeoutWatch() {
+    if (this._timeoutCheckId !== null) {
+      clearInterval(this._timeoutCheckId);
+      this._timeoutCheckId = null;
+    }
+  }
+
+  /**
+   * 降级到低精度定位
+   */
+  _downgrade() {
+    if (this._downgraded) return;
+    this._downgraded = true;
+    console.warn('[GPS] 连续超时达阈值，降级到低精度定位');
+    if (this.onDowngrade) this.onDowngrade(this._consecutiveTimeouts);
+
+    // 用新参数重启 watchPosition
+    if (this.isWatching) {
+      this.stopWatching();
+      this.isWatching = false;
+      this.startWatching({
+        enableHighAccuracy: false,
+        timeout: CONFIG.GPS_LOW_ACCURACY_TIMEOUT,
+        maximumAge: 5000
+      });
+    }
+
+    // 启动恢复尝试定时器
+    this._startRecoveryTimer();
+  }
+
+  /**
+   * 启动恢复尝试定时器 — 每 2 分钟尝试恢复高精度
+   */
+  _startRecoveryTimer() {
+    this._stopRecoveryTimer();
+    this._recoveryTimerId = setInterval(() => {
+      this._tryRecovery();
+    }, CONFIG.GPS_RECOVERY_INTERVAL_MS);
+  }
+
+  /**
+   * 停止恢复尝试定时器
+   */
+  _stopRecoveryTimer() {
+    if (this._recoveryTimerId !== null) {
+      clearInterval(this._recoveryTimerId);
+      this._recoveryTimerId = null;
+    }
+  }
+
+  /**
+   * 尝试恢复高精度定位 — 用单次 getCurrentPosition 测试
+   */
+  async _tryRecovery() {
+    if (!this._downgraded || !this.isWatching) return;
+    console.log('[GPS] 尝试恢复高精度定位...');
+    try {
+      await this.getCurrentPosition(CONFIG.GPS_TIMEOUT);
+      // 成功 → 恢复高精度
+      this._downgraded = false;
+      this._consecutiveTimeouts = 0;
+      this._stopRecoveryTimer();
+      console.log('[GPS] 高精度定位恢复成功');
+      if (this.onRecovery) this.onRecovery(true);
+
+      // 用高精度参数重启 watchPosition
+      if (this.isWatching) {
+        this.stopWatching();
+        this.isWatching = false;
+        this.startWatching({
+          enableHighAccuracy: true,
+          timeout: CONFIG.GPS_TIMEOUT,
+          maximumAge: 5000
+        });
+      }
+    } catch (err) {
+      // 失败 → 继续低精度
+      console.warn('[GPS] 恢复高精度失败:', err.message);
+      if (this.onRecovery) this.onRecovery(false);
+    }
+  }
+
+  /**
+   * 重置超时计数（位置成功时调用）
+   */
+  _resetTimeouts() {
+    if (this._consecutiveTimeouts > 0) {
+      console.log(`[GPS] 位置更新，重置连续超时计数（was ${this._consecutiveTimeouts}）`);
+    }
+    this._consecutiveTimeouts = 0;
+    this._lastPositionTime = Date.now();
   }
 
   /**
@@ -135,7 +269,7 @@ class GPSManager {
 
     const opts = Object.assign({
       enableHighAccuracy: true,
-      timeout: 10000,
+      timeout: CONFIG.GPS_TIMEOUT,
       maximumAge: 5000
     }, options || {});
 
@@ -153,6 +287,7 @@ class GPSManager {
           timestamp: position.timestamp
         };
         this.currentPosition = pos;
+        this._resetTimeouts(); // 收到位置 → 重置超时计数
         if (this.onPositionChange) this.onPositionChange(pos);
       },
       (error) => {
@@ -161,6 +296,7 @@ class GPSManager {
       opts
     );
 
+    this._startTimeoutWatch(); // 启动超时检测
     if (this.onWatchStart) this.onWatchStart();
   }
 
@@ -173,6 +309,8 @@ class GPSManager {
       this.watchId = null;
     }
     this.isWatching = false;
+    this._stopTimeoutWatch();
+    this._stopRecoveryTimer();
     if (this.onWatchStop) this.onWatchStop();
   }
 
@@ -182,5 +320,19 @@ class GPSManager {
    */
   getLastPosition() {
     return this.currentPosition;
+  }
+
+  /**
+   * 是否处于降级（低精度）模式
+   */
+  get isDowngraded() {
+    return this._downgraded;
+  }
+
+  /**
+   * 连续超时次数
+   */
+  get consecutiveTimeouts() {
+    return this._consecutiveTimeouts;
   }
 }
