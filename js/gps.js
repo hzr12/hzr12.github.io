@@ -59,7 +59,7 @@ class GPSManager {
    * 获取当前生效的 GPS 超时时间
    */
   _getCurrentTimeout() {
-    return this._downgraded ? CONFIG.GPS_LOW_ACCURACY_TIMEOUT : CONFIG.GPS_TIMEOUT;
+    return this._downgraded ? CONFIG.GPS_LOW_ACCURACY_TIMEOUT : CONFIG.GPS_WATCH_TIMEOUT;
   }
 
   /**
