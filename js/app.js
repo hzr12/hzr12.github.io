@@ -298,16 +298,36 @@ class App {
     this._targetInfoEl = document.getElementById('target-info');
     this._targetClearBtn = document.getElementById('target-clear-btn');
     this._targetRange = document.getElementById('target-range');
-    this._targetRangeVal = document.getElementById('target-range-val');
+    this._targetRangeInput = document.getElementById('target-range-input');
+    this._targetRangeRow = document.getElementById('target-range-row');
     document.getElementById('target-set-btn').addEventListener('click', () => this._setTargetPosition());
     this._targetClearBtn.addEventListener('click', () => this._clearTarget());
-    // 精度范围滑块
+    // 精度范围：滑块 ↔ 输入框双向同步
     this._targetRange.addEventListener('input', () => {
       const v = parseInt(this._targetRange.value);
-      this._targetRangeVal.textContent = v === 0 ? '关' : formatDistance(v);
-      if (this._targetPos) {
-        this.mapManager.setTargetRange(v);
+      this._targetRangeInput.value = v;
+      if (this._targetPos) this.mapManager.setTargetRange(v);
+    });
+    this._targetRangeInput.addEventListener('input', () => {
+      let v = parseInt(this._targetRangeInput.value) || 0;
+      if (v < 0) v = 0;
+      if (v > 5000) v = 5000;
+      this._targetRange.value = v;
+      if (this._targetPos) this.mapManager.setTargetRange(v);
+    });
+
+    // —— 复制我方坐标 ——
+    document.getElementById('copy-mypos-btn').addEventListener('click', () => {
+      if (!this.myPosition) {
+        Toast.show('⚠️ 尚无定位，请先定位');
+        return;
       }
+      const text = `${this.myPosition.lat.toFixed(6)}, ${this.myPosition.lng.toFixed(6)}`;
+      navigator.clipboard.writeText(text).then(() => {
+        Toast.show(`📋 已复制: ${text}`);
+      }).catch(() => {
+        Toast.show('⚠️ 复制失败');
+      });
     });
 
     // —— GPS 状态条缓存 + #12 点击切换跟随模式 ——
@@ -1154,6 +1174,7 @@ class App {
     const range = parseInt(this._targetRange.value) || 0;
     this.mapManager.setTarget(this._targetPos, range);
     this._targetClearBtn.disabled = false;
+    this._targetRangeRow.classList.remove('hidden');
     this._targetInfoEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     if (this.myPosition) {
       const dist = calcDistance(this.myPosition, this._targetPos);
@@ -1170,9 +1191,9 @@ class App {
     this.mapManager.setTarget(null);
     this._targetClearBtn.disabled = true;
     this._targetInfoEl.textContent = '';
+    this._targetRangeRow.classList.add('hidden');
     this._targetRange.value = 0;
-    this._targetRangeVal.textContent = '关';
-    this.mapManager.setTargetRange(0);
+    this._targetRangeInput.value = 0;
   }
 
   /**

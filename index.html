@@ -104,16 +104,21 @@
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             设为我的位置
           </button>
+          <button id="copy-mypos-btn" class="btn-setpos btn-copy" title="复制我方经纬度">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            复制我的坐标
+          </button>
           <button id="target-set-btn" class="btn-setpos btn-target">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             标记对方
           </button>
           <button id="target-clear-btn" class="btn-setpos btn-target-clear" disabled>清除</button>
         </div>
-        <div class="target-range-row" id="target-range-row">
+        <div class="target-range-row hidden" id="target-range-row">
           <label class="field-label">精度范围</label>
           <input type="range" id="target-range" class="target-range" min="0" max="5000" value="0" step="10">
-          <span class="target-range-val" id="target-range-val">关</span>
+          <input type="number" id="target-range-input" class="target-range-input" value="0" min="0" max="5000" step="10" inputmode="numeric">
+          <span class="target-range-unit">米</span>
         </div>
         <div class="target-info" id="target-info"></div>
       </div>
@@ -246,13 +251,13 @@
   <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77&libraries=geometry,convertor"></script>
 
   <!-- 应用脚本 -->
-  <script src="js/config.js?t=20260702v1"></script>
-  <script src="js/toast.js?t=20260702v1"></script>
-  <script src="js/storage.js?t=20260702v1"></script>
-  <script src="js/trail.js?t=20260702v1"></script>
-  <script src="js/gpx.js?t=20260702v1"></script>
-  <script src="js/map.js?t=20260702v1"></script>
-  <script src="js/gps.js?t=20260702v1"></script>
-  <script src="js/app.js?t=20260702v1"></script>
+  <script src="js/config.js?t=20260702v2"></script>
+  <script src="js/toast.js?t=20260702v2"></script>
+  <script src="js/storage.js?t=20260702v2"></script>
+  <script src="js/trail.js?t=20260702v2"></script>
+  <script src="js/gpx.js?t=20260702v2"></script>
+  <script src="js/map.js?t=20260702v2"></script>
+  <script src="js/gps.js?t=20260702v2"></script>
+  <script src="js/app.js?t=20260702v2"></script>
 </body>
 </html>

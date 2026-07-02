@@ -757,6 +757,14 @@ input[type="number"] {
 .btn-target:active {
   background: rgba(0, 212, 170, 0.16);
 }
+.btn-copy {
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border-color: var(--border-color);
+}
+.btn-copy:active {
+  background: var(--bg-hover);
+}
 .btn-target-clear {
   color: var(--danger);
   background: rgba(255, 71, 87, 0.08);
@@ -1035,6 +1043,9 @@ input[type="number"] {
   gap: 8px;
   margin-top: 6px;
 }
+.target-range-row.hidden {
+  display: none;
+}
 .target-range-row .field-label {
   margin-bottom: 0;
   flex-shrink: 0;
@@ -1045,8 +1056,12 @@ input[type="number"] {
   appearance: none;
   height: 4px;
   border-radius: 2px;
-  background: var(--bg-input);
   outline: none;
+}
+.target-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-input);
 }
 .target-range::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1056,6 +1071,12 @@ input[type="number"] {
   background: var(--accent-1);
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 212, 170, 0.3);
+  margin-top: -6px;
+}
+.target-range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-input);
 }
 .target-range::-moz-range-thumb {
   width: 16px;
@@ -1065,13 +1086,25 @@ input[type="number"] {
   cursor: pointer;
   border: none;
 }
-.target-range-val {
-  font-size: 11px;
+.target-range-input {
+  width: 56px;
+  padding: 4px 6px;
+  font-size: 12px;
   font-family: var(--font-mono);
-  color: var(--accent-1);
-  font-weight: 600;
-  min-width: 40px;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   text-align: right;
+}
+.target-range-input:focus {
+  background: var(--bg-input-focus);
+  border-color: var(--border-active);
+}
+.target-range-unit {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 /* ---------- 圆列表 ---------- */
