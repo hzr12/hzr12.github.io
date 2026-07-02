@@ -944,9 +944,10 @@ class MapManager {
       map: this.map,
       center,
       radius: range,
-      fillColor: 'rgba(255, 140, 0, 0.08)',
-      fillOpacity: 1,
-      strokeColor: 'rgba(255, 140, 0, 0.4)',
+      fillColor: '#ff8c00',
+      fillOpacity: 0.08,
+      strokeColor: '#ff8c00',
+      strokeOpacity: 0.4,
       strokeWeight: 1.5,
       strokeDashArray: [6, 4],
       clickable: false
