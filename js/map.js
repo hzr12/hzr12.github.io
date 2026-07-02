@@ -395,7 +395,7 @@ class MapManager {
     // ── 相对方距离标注（圆心下方） ──
     if (this._targetPos) {
       const dist = calcDistance(circle.center, this._targetPos);
-      const distLabel = '← ' + formatDistance(dist);
+      const distLabel = formatDistance(dist);
       ctx.font = '500 9px -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
@@ -414,7 +414,7 @@ class MapManager {
     // ── 距我距离标注（圆心下方，第二行） ──
     if (this._myPos) {
       const dist = calcDistance(circle.center, this._myPos);
-      const distLabel = '⊙ ' + formatDistance(dist);
+      const distLabel = formatDistance(dist);
       ctx.font = '500 9px -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
