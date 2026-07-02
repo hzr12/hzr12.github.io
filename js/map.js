@@ -391,6 +391,25 @@ class MapManager {
     ctx.fillStyle = dotFill;
     ctx.fill();
 
+    // ── 相对方距离标注（圆心下方） ──
+    if (this._targetPos) {
+      const dist = calcDistance(circle.center, this._targetPos);
+      const distLabel = '← ' + formatDistance(dist);
+      ctx.font = '500 9px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const dtw = ctx.measureText(distLabel).width;
+      const dly = cy + dotR + 4;
+      // 底色
+      ctx.fillStyle = 'rgba(255, 140, 0, 0.8)';
+      ctx.beginPath();
+      ctx.roundRect(cx - dtw / 2 - 3, dly - 1, dtw + 6, 14, 3);
+      ctx.fill();
+      // 文字
+      ctx.fillStyle = '#fff';
+      ctx.fillText(distLabel, cx, dly + 1);
+    }
+
     // ── 圆圈距离标注 ──
     if (mp >= 30) {
       const labelR = mp;
