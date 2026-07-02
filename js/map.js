@@ -26,6 +26,7 @@ class MapManager {
     this.trailPolylines = [];   // 历史轨迹线（多段，按速度着色）
     this._targetPos = null;    // 对方位置坐标
     this.targetCircle = null;  // 对方精度范围圈
+    this._myPos = null;        // 我的位置（Canvas 标注用）
 
     // 回调钩子
     this.onCenterChange = null;
@@ -402,6 +403,26 @@ class MapManager {
       const dly = cy + dotR + 4;
       // 底色
       ctx.fillStyle = 'rgba(255, 140, 0, 0.8)';
+      ctx.beginPath();
+      ctx.roundRect(cx - dtw / 2 - 3, dly - 1, dtw + 6, 14, 3);
+      ctx.fill();
+      // 文字
+      ctx.fillStyle = '#fff';
+      ctx.fillText(distLabel, cx, dly + 1);
+    }
+
+    // ── 距我距离标注（圆心下方，第二行） ──
+    if (this._myPos) {
+      const dist = calcDistance(circle.center, this._myPos);
+      const distLabel = '⊙ ' + formatDistance(dist);
+      ctx.font = '500 9px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const dtw = ctx.measureText(distLabel).width;
+      const offsetY = this._targetPos ? 18 : 0;
+      const dly = cy + dotR + 4 + offsetY;
+      // 底色
+      ctx.fillStyle = 'rgba(0, 136, 255, 0.8)';
       ctx.beginPath();
       ctx.roundRect(cx - dtw / 2 - 3, dly - 1, dtw + 6, 14, 3);
       ctx.fill();
@@ -916,6 +937,14 @@ class MapManager {
       new qq.maps.Point(20, 20),
       new qq.maps.Size(40, 40)
     );
+  }
+
+  /**
+   * 设置我方位置（Canvas 标注用）
+   */
+  setMyPos(pos) {
+    this._myPos = pos;
+    this._scheduleRedraw();
   }
 
   /**

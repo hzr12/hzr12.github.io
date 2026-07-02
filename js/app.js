@@ -562,6 +562,7 @@ class App {
     this._isManualPosition = true;
     this._prevDistances = {};
     this._lastAccuracy = 50;
+    this.mapManager.setMyPos(pos);
     this.mapManager.setLocation(pos, 50); // 手动定位默认精度 50m
     this._recordFix({ ...pos, accuracy: 50 }, pos, true); // 手动定位加入最近列表
     this._updateStatusBar(true);
@@ -636,6 +637,7 @@ class App {
       this.center = convPos;
       this.myPosition = convPos;
       this.myPositionTime = Date.now();
+      this.mapManager.setMyPos(convPos);
       this._isManualPosition = false; // #13 GPS 定位覆盖手动
       this._lastSpeed = pos.speed;
       this._lastAltitude = pos.altitude;
@@ -1042,6 +1044,7 @@ class App {
     // 保存定位信息
     this.myPosition = convPos;
     this.myPositionTime = Date.now();
+    this.mapManager.setMyPos(convPos);
     this._isManualPosition = false; // #13 GPS 定位覆盖手动
     // 记录到最近列表
     this._recordFix(pos, convPos);
