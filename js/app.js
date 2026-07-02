@@ -690,12 +690,11 @@ class App {
         .catch(() => {}); // 防止队列断裂
     };
     this.gpsManager.onError = (err) => {
-      const count = this.gpsManager.consecutiveTimeouts;
       console.warn('[GPS] 追踪出错:', err.message);
-      Toast.show(`📡 超时 #${count}`);
+      Toast.show('⚠️ ' + err.message);
     };
     this.gpsManager.onDowngrade = (count) => {
-      Toast.show(`⚠️ 已切换低精度（${count}次超时）`);
+      Toast.show(`⚠️ 已切换低精度定位`);
       this._updateStatusBar(true);
     };
     this.gpsManager.onRecovery = (success) => {
