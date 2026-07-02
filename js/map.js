@@ -5,6 +5,26 @@
  * 纬向墨卡托投影坐标 → 容器像素转换
  */
 
+// roundRect polyfill — 兼容 iOS <15.4、Firefox <112
+if (typeof CanvasRenderingContext2D !== 'undefined' &&
+    !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    const radii = typeof r === 'number' ? [r, r, r, r] : r;
+    const [tl, tr, br, bl] = radii;
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + tr);
+    this.lineTo(x + w, y + h - br);
+    this.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+    this.lineTo(x + bl, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - bl);
+    this.lineTo(x, y + tl);
+    this.quadraticCurveTo(x, y, x + tl, y);
+    this.closePath();
+    return this;
+  };
+}
+
 class MapManager {
   constructor() {
     this.map = null;
@@ -87,6 +107,7 @@ class MapManager {
     qq.maps.event.addListener(this.map, 'center_changed', () => {
       const c = this.map.getCenter();
       if (c) this._syncCenter = c;
+      this._scheduleRedraw();
     });
     qq.maps.event.addListener(this.map, 'zoom_changed', () => {
       this._scheduleRedraw();
@@ -812,6 +833,7 @@ class MapManager {
         fillColor: new qq.maps.Color(0, 136, 255, 0.08),
         strokeColor: new qq.maps.Color(0, 136, 255, 0.15),
         strokeWeight: 1,
+        clickable: false,
         editable: false
       });
     }
@@ -943,6 +965,7 @@ class MapManager {
    * 设置我方位置（Canvas 标注用）
    */
   setMyPos(pos) {
+    if (!this.map) return;
     this._myPos = pos;
     this._scheduleRedraw();
   }
@@ -960,6 +983,7 @@ class MapManager {
         this.targetMarker = null;
       }
       this.setTargetRange(0);
+      this._scheduleRedraw();
       return;
     }
     this._targetPos = center;
@@ -975,6 +999,7 @@ class MapManager {
       });
     }
     if (range > 0) this.setTargetRange(range);
+    this._scheduleRedraw();
   }
 
   /**
@@ -982,22 +1007,30 @@ class MapManager {
    */
   setTargetRange(range) {
     if (!this.map) return;
-    if (this.targetCircle) {
-      this.targetCircle.setMap(null);
-      this.targetCircle = null;
+    if (!this._targetPos || range <= 0) {
+      if (this.targetCircle) {
+        this.targetCircle.setMap(null);
+        this.targetCircle = null;
+      }
+      return;
     }
-    if (!this._targetPos || range <= 0) return;
     const center = new qq.maps.LatLng(this._targetPos.lat, this._targetPos.lng);
-    this.targetCircle = new qq.maps.Circle({
-      map: this.map,
-      center,
-      radius: range,
-      fillColor: new qq.maps.Color(255, 140, 0, 0.08),
-      strokeColor: new qq.maps.Color(255, 140, 0, 0.4),
-      strokeWeight: 1.5,
-      strokeDashArray: [6, 4],
-      clickable: false
-    });
+    if (this.targetCircle) {
+      this.targetCircle.setCenter(center);
+      this.targetCircle.setRadius(range);
+    } else {
+      this.targetCircle = new qq.maps.Circle({
+        map: this.map,
+        center,
+        radius: range,
+        fillColor: new qq.maps.Color(255, 140, 0, 0.08),
+        strokeColor: new qq.maps.Color(255, 140, 0, 0.4),
+        strokeWeight: 1.5,
+        strokeDashArray: [6, 4],
+        clickable: false,
+        editable: false
+      });
+    }
   }
 
   destroy() {
@@ -1022,6 +1055,8 @@ class MapManager {
       this.targetCircle.setMap(null);
       this.targetCircle = null;
     }
+    this._myPos = null;
+    this._targetPos = null;
     this._offCanvas = null;
     this.map = null;
     this.center = null;

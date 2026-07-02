@@ -1142,8 +1142,8 @@ class App {
 
       this.myPosition = convPos;
       this.myPositionTime = Date.now();
+      this.mapManager.setMyPos(convPos);
       this._isManualPosition = false; // #13 GPS 定位覆盖手动
-      this._lastSpeed = pos.speed;
       this._lastAltitude = pos.altitude;
       this._lastAccuracy = pos.accuracy;
       this._recordFix(pos, convPos);
