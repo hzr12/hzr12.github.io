@@ -3,6 +3,19 @@
  * ============================================
  * 使用浏览器原生 Geolocation API 获取设备位置
  * 支持单次定位 + 持续追踪
+ *
+ * GPS 超时降级机制：
+ *   正常模式 → 连续超时 ≥ 5 次 → 降级到低精度 → 每 2 分钟尝试恢复
+ *
+ *   状态转换：
+ *     正常（enableHighAccuracy: true, timeout: 5s）
+ *       ↓ 连续超时 5 次
+ *     降级（enableHighAccuracy: false, timeout: 5s）
+ *       ↓ 每 2 分钟尝试 getCurrentPosition 测试
+ *     成功 → 恢复正常 / 失败 → 继续降级
+ *
+ * 电量监控：
+ *   电量 < 20% 时自动降低 GPS 频率（timeout: 15s, maximumAge: 15s）
  */
 
 class GPSManager {
@@ -41,6 +54,12 @@ class GPSManager {
 
   /**
    * 初始化电池监控 — 低电量时降低 GPS 频率
+   *
+   * 策略：电量 < 20% 时，如果正在持续追踪，
+   *   自动用低精度参数重启 watchPosition（timeout: 15s, maximumAge: 15s）
+   *   以减少电量消耗。
+   *
+   * 仅在刚进入低电量时触发重启，避免重复操作。
    */
   _initBatteryMonitor() {
     if (!navigator.getBattery) return;
@@ -64,7 +83,12 @@ class GPSManager {
 
   /**
    * 探测 Capacitor GNSS 原生插件是否存在。
-   * 仅存储插件引用，不启动监听——监听需要定位权限，延迟到 startGnss() 调用。
+   *
+   * GNSS 插件用于获取原生卫星数据（GPS/北斗/GLONASS/Galileo），
+   * 包括卫星数量、信噪比、参与定位的卫星等信息。
+   *
+   * 仅存储插件引用，不启动监听——监听需要定位权限，
+   * 延迟到 startGnss() 调用（由 app.js 在首次定位成功后触发）。
    */
   _tryInitGnssPlugin() {
     if (typeof Capacitor === 'undefined' || !Capacitor.Plugins) {
@@ -82,7 +106,13 @@ class GPSManager {
 
   /**
    * 激活 GNSS 监听（注册卫星状态 + NMEA 回调）。
+   *
+   * 监听内容：
+   *   - gnssStatus 事件 → 更新卫星列表（_gnssSatellites）
+   *   - nmeaSentence 事件 → 记录 NMEA 语句（保留最近 50 条）
+   *
    * 需确认定位权限已授予后调用，由 app.js 在首次定位成功后触发。
+   * 防止重复启动（_gnssListeningStarted 标志）。
    */
   async startGnss() {
     if (!this._gnssPlugin) {
@@ -123,6 +153,12 @@ class GPSManager {
 
   /**
    * 启动超时检测定时器 — 每秒检查是否超时
+   *
+   * 超时检测逻辑：
+   *   每秒检查距上次收到位置是否超过当前超时阈值
+   *   超时 → 递增连续超时计数
+   *   连续超时 ≥ 阈值 → 触发降级
+   *   收到新位置 → 重置计数（由 _resetTimeouts 调用）
    */
   _startTimeoutWatch() {
     this._stopTimeoutWatch();
@@ -154,6 +190,13 @@ class GPSManager {
 
   /**
    * 降级到低精度定位
+   *
+   * 降级操作：
+   *   1. 标记降级状态
+   *   2. 触发 onDowngrade 回调（通知 UI）
+   *   3. 停止当前 watchPosition
+   *   4. 用低精度参数重启 watchPosition（enableHighAccuracy: false）
+   *   5. 启动恢复尝试定时器（每 2 分钟测试一次高精度）
    */
   _downgrade() {
     if (this._downgraded) return;
@@ -198,6 +241,11 @@ class GPSManager {
 
   /**
    * 尝试恢复高精度定位 — 用单次 getCurrentPosition 测试
+   *
+   * 恢复逻辑：
+   *   调用 getCurrentPosition（高精度）测试 GPS 信号
+   *   成功 → 恢复正常模式，用高精度参数重启 watchPosition
+   *   失败 → 继续降级状态，等待下次尝试
    */
   async _tryRecovery() {
     if (!this._downgraded || !this.isWatching) return;
