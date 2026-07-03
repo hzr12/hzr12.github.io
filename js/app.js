@@ -661,6 +661,13 @@ class App {
       setTimeout(() => this._gpsBtn.classList.remove('located'), CONFIG.LOCATED_ANIM_MS);
 
       Toast.show(`✅ 定位成功（精度 ±${pos.accuracy.toFixed(0)} 米）`);
+
+      // 权限已确认，激活 GNSS 卫星监听
+      this.gpsManager.startGnss().then(() => {
+        if (this.gpsManager.hasGnssPlugin) {
+          Toast.show(`🛰️ GNSS 卫星数据已激活`);
+        }
+      }).catch(() => {});
     } catch (err) {
       Toast.show('❌ ' + err.message);
       this._gpsBtn.classList.remove('located');
@@ -742,6 +749,7 @@ class App {
   _clearTrail() {
     const savedPositions = this.trail.positions.slice();
     const savedLastPos = this.trail.lastPos;
+    const savedRecording = this.trail.isRecording;
 
     this.trail.clear();
     this.mapManager.clearTrail();
@@ -751,6 +759,7 @@ class App {
     this._showUndoToast('轨迹已清除', () => {
       this.trail.positions = savedPositions;
       this.trail.lastPos = savedLastPos;
+      this.trail.isRecording = savedRecording;
       if (savedPositions.length >= 2) {
         this.mapManager.setTrail(this._getTrailPositions());
       }
@@ -1086,6 +1095,13 @@ class App {
         setTimeout(() => this._gpsBtn.classList.remove('located'), CONFIG.LOCATED_ANIM_MS);
 
         Toast.show(`✅ 定位成功（精度 ±${pos.accuracy.toFixed(0)} 米）`);
+
+        // 首次定位成功 → 权限已确认，激活 GNSS 卫星监听
+        this.gpsManager.startGnss().then(() => {
+          if (this.gpsManager.hasGnssPlugin) {
+            Toast.show(`🛰️ GNSS 卫星数据已激活`);
+          }
+        }).catch(() => {});
       }
     } else if (this._isWatching) {
       // 用户手动选过中心点 → 不覆盖 center（GPS 只更新自身位置标记）
@@ -1168,6 +1184,7 @@ class App {
 
     } catch (err) {
       console.warn('[AutoRelocate] 重定位失败:', err.message);
+      Toast.show('⚠️ 自动重定位失败');
       // 失败后留待下一个周期再试（依靠 _lastRelocateAttempt 控制频率）
     } finally {
       this._relocating = false;
@@ -1318,12 +1335,7 @@ class App {
     } catch (e) { /* 静默 */ }
     document.documentElement.setAttribute('data-theme', this._theme);
     this.mapManager.setTheme(this._theme);
-    // 等 DOM 就绪后更新按钮图标
-    if (document.readyState !== 'loading') {
-      this._updateThemeBtn();
-    } else {
-      document.addEventListener('DOMContentLoaded', () => this._updateThemeBtn());
-    }
+    this._updateThemeBtn();
   }
 
   /**

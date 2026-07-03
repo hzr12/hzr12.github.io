@@ -31,6 +31,7 @@ class GPSManager {
     this._gnssSatellites = [];     // GnssSatelliteInfo[]
     this._gnssNmea = [];           // GnssNmeaData[]
     this._gnssInitError = null;    // 初始化失败原因
+    this._gnssListeningStarted = false; // startGnss() 是否已调用
 
     // 电量监控
     this._lowBattery = false;
@@ -49,12 +50,11 @@ class GPSManager {
         this._lowBattery = battery.level < 0.2;
         if (this._lowBattery && !wasLow) {
           console.warn('[GPS] 电量低于 20%，已降低 GPS 频率');
-        }
-        // 低电量时重启 watchPosition 用新参数
-        if (this.isWatching) {
-          this.stopWatching();
-          this.isWatching = false;
-          this.startWatching({ enableHighAccuracy: false, timeout: 15000, maximumAge: 15000 });
+          // 仅在刚进入低电量时重启 watchPosition
+          if (this.isWatching) {
+            this.stopWatching();
+            this.startWatching({ enableHighAccuracy: false, timeout: 15000, maximumAge: 15000 });
+          }
         }
       };
       battery.addEventListener('levelchange', check);
@@ -63,10 +63,10 @@ class GPSManager {
   }
 
   /**
-   * 初始化 Capacitor GNSS 原生插件（卫星数据 + NMEA）
-   * 仅在 Capacitor WebView 中生效，浏览器静默跳过
+   * 探测 Capacitor GNSS 原生插件是否存在。
+   * 仅存储插件引用，不启动监听——监听需要定位权限，延迟到 startGnss() 调用。
    */
-  async _tryInitGnssPlugin() {
+  _tryInitGnssPlugin() {
     if (typeof Capacitor === 'undefined' || !Capacitor.Plugins) {
       this._gnssInitError = 'not_capacitor';
       return;
@@ -76,24 +76,41 @@ class GPSManager {
       this._gnssInitError = 'plugin_not_registered';
       return;
     }
+    this._gnssPlugin = plugin;
+    console.log('[GPS] GNSS 插件已探测到，等待 startGnss() 激活');
+  }
+
+  /**
+   * 激活 GNSS 监听（注册卫星状态 + NMEA 回调）。
+   * 需确认定位权限已授予后调用，由 app.js 在首次定位成功后触发。
+   */
+  async startGnss() {
+    if (!this._gnssPlugin) {
+      console.warn('[GPS] startGnss 跳过：无 GNSS 插件引用');
+      return;
+    }
+    if (this._gnssListeningStarted) {
+      return; // 防止重复启动
+    }
+    this._gnssListeningStarted = true; // 提前标记，防止并发的重复调用
     try {
-      this._gnssPlugin = plugin;
-      await plugin.startGnssListening();
-      plugin.addListener('gnssStatus', (event) => {
+      await this._gnssPlugin.startGnssListening();
+      this._gnssPlugin.addListener('gnssStatus', (event) => {
         if (event && event.satellites) {
           this._gnssSatellites = event.satellites;
         }
       });
-      plugin.addListener('nmeaSentence', (nmea) => {
+      this._gnssPlugin.addListener('nmeaSentence', (nmea) => {
         if (nmea && nmea.sentence) {
           this._gnssNmea.push(nmea);
           if (this._gnssNmea.length > 50) this._gnssNmea.shift();
         }
       });
-      console.log('[GPS] GNSS 插件已连接，卫星数据可用');
+      this._gnssInitError = null;
+      console.log('[GPS] GNSS 插件已激活，卫星数据可用');
     } catch (err) {
-      this._gnssInitError = err.message || 'init_failed';
-      console.warn('[GPS] GNSS 插件初始化失败:', err.message);
+      this._gnssInitError = err.message || 'start_failed';
+      console.warn('[GPS] GNSS 插件激活失败:', err.message);
     }
   }
 

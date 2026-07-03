@@ -181,10 +181,12 @@ class MapManager {
   _resizeCanvas() {
     const parent = this.canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = parent.offsetWidth * dpr;
-    this.canvas.height = parent.offsetHeight * dpr;
-    this.canvas.style.width = parent.offsetWidth + 'px';
-    this.canvas.style.height = parent.offsetHeight + 'px';
+    const w = parent.offsetWidth;
+    const h = parent.offsetHeight;
+    this.canvas.width = Math.round(w * dpr);
+    this.canvas.height = Math.round(h * dpr);
+    this.canvas.style.width = w + 'px';
+    this.canvas.style.height = h + 'px';
   }
 
   /* ================================================================
@@ -1035,10 +1037,31 @@ class MapManager {
 
   destroy() {
     this.clearTrail();
+
+    // 取消待执行渲染
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
+    }
+
+    // 移除窗口 resize 监听
     if (this._resizeHandler) {
       window.removeEventListener('resize', this._resizeHandler);
       this._resizeHandler = null;
     }
+
+    // 清理精度环
+    if (this.accuracyCircle) {
+      this.accuracyCircle.setMap(null);
+      this.accuracyCircle = null;
+    }
+
+    // 移除腾讯地图所有事件监听（click, longpress, center_changed, zoom_changed, drag, dragend 等）
+    if (this.map) {
+      qq.maps.event.clearInstanceListeners(this.map);
+    }
+
+    // 清理标记
     if (this.marker) {
       this.marker.setMap(null);
       this.marker = null;
@@ -1055,9 +1078,14 @@ class MapManager {
       this.targetCircle.setMap(null);
       this.targetCircle = null;
     }
+
     this._myPos = null;
     this._targetPos = null;
     this._offCanvas = null;
+    this._offCtx = null;       // 释放离屏 context 引用
+    this.canvas = null;
+    this.ctx = null;
+    this._syncCenter = null;
     this.map = null;
     this.center = null;
   }
