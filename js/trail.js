@@ -37,6 +37,7 @@ class Trail {
 
   /**
    * 采样记录一个轨迹点（每 >10m 采一个点，最多 500 个）
+   * 抖动过滤：位移必须同时超过最小间距和 accuracy × 抖动系数，避免站定时 GPS 漂移鬼点
    * @param {{lat:number,lng:number,wgsLat?:number,wgsLng?:number,time?:number,accuracy?:number,speed?:number,heading?:number}} pt
    * @returns {boolean} 是否实际添加了点
    */
@@ -48,11 +49,19 @@ class Trail {
       console.warn('[Trail] 丢弃无效点:', pt.lat, pt.lng);
       return false;
     }
-    if (this.lastPos && calcDistance(
-      { lat: pt.lat, lng: pt.lng },
-      { lat: this.lastPos.lat, lng: this.lastPos.lng }
-    ) <= CONFIG.TRAIL_SAMPLE_MIN_DIST) {
-      return false;
+    if (this.lastPos) {
+      const dist = calcDistance(
+        { lat: pt.lat, lng: pt.lng },
+        { lat: this.lastPos.lat, lng: this.lastPos.lng }
+      );
+      // 必须同时超过固定最小间距和精度联动阈值（防抖动）
+      const jitterThreshold = Math.max(
+        CONFIG.TRAIL_SAMPLE_MIN_DIST,
+        CONFIG.TRAIL_JITTER_FACTOR * (pt.accuracy || 0)
+      );
+      if (dist <= jitterThreshold) {
+        return false;
+      }
     }
     this.positions.push(pt);
     this.lastPos = pt;

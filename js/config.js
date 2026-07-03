@@ -76,6 +76,7 @@ const CONFIG = {
 
   // ----- 轨迹 -----
   TRAIL_SAMPLE_MIN_DIST: 10,            // 轨迹采样最小间隔（米）
+  TRAIL_JITTER_FACTOR: 1.5,            // 抖动检测：位移必须 > accuracy × 倍数才记录
   TRAIL_MAX_POINTS: 500,                // 轨迹最大点数
 
   // ----- UI -----
