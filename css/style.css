@@ -457,6 +457,16 @@ input[type="number"] {
   opacity: 1;
 }
 
+.gnss-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
 .gps-tracking {
   color: var(--accent-1);
   animation: trackingBlink 1.5s ease-in-out infinite;

@@ -1469,6 +1469,24 @@ class App {
     const manualIcon = isManual ? ' <span class="gps-manual">📍 手动定位</span>' : ''; // #15
     const degradedIcon = isDowngraded ? ' <span class="gps-degraded">⚡ 低精度</span>' : '';
 
+    // GNSS 卫星数据（仅 Capacitor 原生端可用），始终渲染
+    let gnssHtml = '';
+    if (this.gpsManager.hasGnssPlugin) {
+      if (this.gpsManager.gnssVisibleCount > 0) {
+        const stats = this.gpsManager.gnssConstellationStats;
+        const parts = [];
+        if (stats.gps > 0) parts.push(`GPS:${stats.gps}`);
+        if (stats.beidou > 0) parts.push(`BD:${stats.beidou}`);
+        if (stats.glonass > 0) parts.push(`GLONASS:${stats.glonass}`);
+        if (stats.galileo > 0) parts.push(`GAL:${stats.galileo}`);
+        const snr = this.gpsManager.gnssAvgSnr;
+        gnssHtml = `<span class="gnss-indicator" title="可用卫星 ${this.gpsManager.gnssUsedCount}/${this.gpsManager.gnssVisibleCount}, 平均信噪比 ${snr.toFixed(0)}dB-Hz">` +
+          `🛰️ ${parts.join(' ')} ${snr.toFixed(0)}dB</span>`;
+      } else {
+        gnssHtml = `<span class="gnss-indicator" style="opacity:0.5">🛰️ 等待卫星...</span>`;
+      }
+    }
+
     // 信号强度（基于 GPS 精度）
     let signalHtml = '';
     if (this._lastAccuracy != null) {
@@ -1485,9 +1503,10 @@ class App {
         `</span>`;
     }
 
-    // 第二行：信号 + 速度 + 海拔 + 最近圆
+    // 第二行：信号 + 卫星 + 速度 + 海拔 + 最近圆
     const line2Parts = [];
     if (signalHtml) line2Parts.push(signalHtml);
+    if (gnssHtml) line2Parts.push(gnssHtml);
     if (this._lastSpeed != null) {
       const kmh = this._lastSpeed * 3.6;
       line2Parts.push(`<span class="gps-speed">${kmh.toFixed(1)}km/h</span>`);

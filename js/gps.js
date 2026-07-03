@@ -26,9 +26,16 @@ class GPSManager {
     this._timeoutCheckId = null;    // 超时检测定时器
     this._recoveryTimerId = null;   // 恢复尝试定时器
 
+    // GNSS 插件（Capacitor 原生端卫星数据）
+    this._gnssPlugin = null;       // Capacitor.Plugins.GnssData 引用
+    this._gnssSatellites = [];     // GnssSatelliteInfo[]
+    this._gnssNmea = [];           // GnssNmeaData[]
+    this._gnssInitError = null;    // 初始化失败原因
+
     // 电量监控
     this._lowBattery = false;
     this._initBatteryMonitor();
+    this._tryInitGnssPlugin();
   }
 
   /**
@@ -53,6 +60,41 @@ class GPSManager {
       battery.addEventListener('levelchange', check);
       check();
     }).catch(() => {});
+  }
+
+  /**
+   * 初始化 Capacitor GNSS 原生插件（卫星数据 + NMEA）
+   * 仅在 Capacitor WebView 中生效，浏览器静默跳过
+   */
+  async _tryInitGnssPlugin() {
+    if (typeof Capacitor === 'undefined' || !Capacitor.Plugins) {
+      this._gnssInitError = 'not_capacitor';
+      return;
+    }
+    const plugin = Capacitor.Plugins.GnssData;
+    if (!plugin) {
+      this._gnssInitError = 'plugin_not_registered';
+      return;
+    }
+    try {
+      this._gnssPlugin = plugin;
+      await plugin.startGnssListening();
+      plugin.addListener('gnssStatus', (event) => {
+        if (event && event.satellites) {
+          this._gnssSatellites = event.satellites;
+        }
+      });
+      plugin.addListener('nmeaSentence', (nmea) => {
+        if (nmea && nmea.sentence) {
+          this._gnssNmea.push(nmea);
+          if (this._gnssNmea.length > 50) this._gnssNmea.shift();
+        }
+      });
+      console.log('[GPS] GNSS 插件已连接，卫星数据可用');
+    } catch (err) {
+      this._gnssInitError = err.message || 'init_failed';
+      console.warn('[GPS] GNSS 插件初始化失败:', err.message);
+    }
   }
 
   /**
@@ -348,5 +390,61 @@ class GPSManager {
    */
   get consecutiveTimeouts() {
     return this._consecutiveTimeouts;
+  }
+
+  /**
+   * 是否已连接 Capacitor GNSS 插件（原生端）
+   */
+  get hasGnssPlugin() {
+    return this._gnssPlugin !== null;
+  }
+
+  /**
+   * 可见卫星列表（来自原生 GNSS 插件）
+   * @returns {Array<{svid:number, constellation:string, cn0DbHz:number, usedInFix:boolean}>}
+   */
+  get gnssSatellites() {
+    return this._gnssSatellites;
+  }
+
+  /**
+   * 参与定位的卫星数
+   */
+  get gnssUsedCount() {
+    return this._gnssSatellites.filter(s => s.usedInFix).length;
+  }
+
+  /**
+   * 可见卫星总数
+   */
+  get gnssVisibleCount() {
+    return this._gnssSatellites.length;
+  }
+
+  /**
+   * 参与定位卫星的平均信噪比 (dB-Hz)
+   */
+  get gnssAvgSnr() {
+    const used = this._gnssSatellites.filter(s => s.usedInFix);
+    if (used.length === 0) return 0;
+    return used.reduce((sum, s) => sum + s.cn0DbHz, 0) / used.length;
+  }
+
+  /**
+   * 按星座分组的卫星数量
+   * @returns {{gps:number, beidou:number, glonass:number, galileo:number, other:number}}
+   */
+  get gnssConstellationStats() {
+    const stats = { gps: 0, beidou: 0, glonass: 0, galileo: 0, other: 0 };
+    for (const s of this._gnssSatellites) {
+      switch (s.constellation) {
+        case 'GPS':     stats.gps++; break;
+        case 'BEIDOU':  stats.beidou++; break;
+        case 'GLONASS': stats.glonass++; break;
+        case 'GALILEO': stats.galileo++; break;
+        default:        stats.other++; break;
+      }
+    }
+    return stats;
   }
 }
