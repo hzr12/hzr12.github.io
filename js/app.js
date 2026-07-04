@@ -1632,6 +1632,32 @@ class App {
   /**
    * Open-Meteo 天气代码 → 中文描述
    */
+  static _wttrCodeToZh(code) {
+    const map = {
+      113: '晴', 116: '多云', 119: '阴', 122: '阴天',
+      143: '雾',
+      176: '零星小雨', 179: '零星小雪', 182: '零星雨夹雪', 185: '零星冻毛毛雨',
+      200: '雷阵雨', 227: '吹雪', 230: '暴风雪',
+      248: '雾', 260: '冻雾',
+      263: '小毛毛雨', 266: '毛毛雨',
+      281: '冻毛毛雨', 284: '大冻毛毛雨',
+      293: '零星小雨', 296: '小雨', 299: '时中雨', 302: '中雨',
+      305: '时大雨', 308: '大雨',
+      311: '小冻雨', 314: '中大冻雨',
+      317: '小雨夹雪', 320: '中大雨夹雪',
+      323: '零星小雪', 326: '小雪', 329: '零星中雪', 332: '中雪',
+      335: '零星大雪', 338: '大雪',
+      350: '冰粒',
+      353: '小阵雨', 356: '中大阵雨', 359: '暴雨',
+      362: '小阵雨夹雪', 365: '中大阵雨夹雪',
+      368: '小阵雪', 371: '中大阵雪',
+      374: '小冰粒', 377: '中大冰粒',
+      386: '小雷阵雨', 389: '大雷阵雨',
+      392: '小雷阵雪', 395: '大雷阵雪'
+    };
+    return map[parseInt(code, 10)] || '';
+  }
+
   static _weatherCodeToZh(code) {
     const map = {
       0: '晴', 1: '大部晴', 2: '多云', 3: '阴',
@@ -1707,7 +1733,7 @@ class App {
         if (!cur) return;
         const temp = cur.temp_C;
         const wind = cur.windspeedKmph;
-        const desc = cur.lang_zh?.[0]?.value || cur.weatherDesc?.[0]?.value || '';
+        const desc = App._wttrCodeToZh(cur.weatherCode) || cur.weatherDesc?.[0]?.value || '';
         const humidity = cur.humidity;
         const humidityText = humidity ? ` 湿度${humidity}%` : '';
         this._weatherHtml = `<span class="gps-weather" title="湿度 ${humidity}%">🌡${temp}°C 💨${wind}km/h${humidityText}${desc ? ' ' + desc : ''}</span>`;
