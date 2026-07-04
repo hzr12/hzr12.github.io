@@ -2207,7 +2207,7 @@ class App {
     const wsParam = params.get('ws');
     const saved = localStorage.getItem('circlemap_ws_url');
     const SERVER_URL = wsParam || saved || (
-      location.hostname === 'localhost'
+      (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
         ? 'ws://localhost:3000'
         : 'wss://circlemap-server.fly.dev'
     );
@@ -2236,7 +2236,7 @@ class App {
       if (!url) {
         // 清除已保存的自定义地址，恢复默认
         localStorage.removeItem('circlemap_ws_url');
-        const defaultUrl = location.hostname === 'localhost'
+        const defaultUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
           ? 'ws://localhost:3000'
           : 'wss://circlemap-server.fly.dev';
         client.disconnect();
@@ -2261,6 +2261,10 @@ class App {
       const labels = { connecting: '连接中...', connected: '已连接', disconnected: '未连接', error: '连接失败' };
       statusEl.textContent = labels[state] || state;
       statusEl.classList.toggle('connected', state === 'connected');
+      // 断连或出错时重新启用按钮，允许重试
+      if (state === 'disconnected' || state === 'error') {
+        createBtn.disabled = false;
+      }
     };
 
     // 房间创建成功
