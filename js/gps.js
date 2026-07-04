@@ -48,6 +48,7 @@ class GPSManager {
     // GPS 节流：最多每 5 秒处理一次位置更新
     this._lastProcessedTime = 0;
     this._gpsMinInterval = 5000; // 毫秒
+    this._lastRawPosition = null; // 节流期间缓存的最新位置
   }
 
   /**
@@ -557,6 +558,8 @@ class GPSManager {
       (position) => {
         // 节流：最多每 _gpsMinInterval 毫秒处理一次
         const now = Date.now();
+        // 总是保存最新位置，节流期间不丢弃
+        this._lastRawPosition = position;
         if (now - this._lastProcessedTime < this._gpsMinInterval) {
           // 即使节流，也要更新超时检测时间，避免误判超时
           this._lastPositionTime = now;
@@ -564,14 +567,17 @@ class GPSManager {
         }
         this._lastProcessedTime = now;
 
+        // 处理缓存的最新位置（而非传入的 position）
+        const raw = this._lastRawPosition;
+        this._lastRawPosition = null;
         const pos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          altitude: position.coords.altitude,
-          speed: position.coords.speed,
-          heading: position.coords.heading,
-          timestamp: position.timestamp
+          lat: raw.coords.latitude,
+          lng: raw.coords.longitude,
+          accuracy: raw.coords.accuracy,
+          altitude: raw.coords.altitude,
+          speed: raw.coords.speed,
+          heading: raw.coords.heading,
+          timestamp: raw.timestamp
         };
         this.currentPosition = pos;
         this._resetTimeouts(); // 收到位置 → 重置超时计数
@@ -605,6 +611,22 @@ class GPSManager {
    * 停止监听位置
    */
   stopWatching() {
+    // 停止前处理缓存的最新位置，避免丢失
+    if (this._lastRawPosition) {
+      const raw = this._lastRawPosition;
+      this._lastRawPosition = null;
+      const pos = {
+        lat: raw.coords.latitude,
+        lng: raw.coords.longitude,
+        accuracy: raw.coords.accuracy,
+        altitude: raw.coords.altitude,
+        speed: raw.coords.speed,
+        heading: raw.coords.heading,
+        timestamp: raw.timestamp
+      };
+      this.currentPosition = pos;
+      if (this.onPositionChange) this.onPositionChange(pos);
+    }
     if (this.watchId !== null) {
       navigator.geolocation.clearWatch(this.watchId);
       this.watchId = null;
