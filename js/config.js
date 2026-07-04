@@ -180,3 +180,32 @@ function formatDistance(meters) {
   if (val < 10000) return `${(val / 1000).toFixed(2)}km`;
   return `${(val / 1000).toFixed(1)}km`;
 }
+
+/**
+ * 复制文本到剪贴板
+ * 优先 Clipboard API，降级到 textarea + execCommand（兼容 Android WebView）
+ * @param {string} text
+ * @returns {Promise<boolean>}
+ */
+async function copyText(text) {
+  // 优先尝试 Clipboard API
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch { /* 降级 */ }
+  }
+  // 降级：textarea + execCommand（Android WebView 可用）
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}

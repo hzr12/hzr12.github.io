@@ -338,17 +338,14 @@ class App {
     });
 
     // —— 复制我方坐标 ——
-    document.getElementById('copy-mypos-btn').addEventListener('click', () => {
+    document.getElementById('copy-mypos-btn').addEventListener('click', async () => {
       if (!this.myPosition) {
         Toast.show('⚠️ 尚无定位，请先定位');
         return;
       }
       const text = `${this.myPosition.lat.toFixed(6)}, ${this.myPosition.lng.toFixed(6)}`;
-      navigator.clipboard.writeText(text).then(() => {
-        Toast.show(`📋 已复制: ${text}`);
-      }).catch(() => {
-        Toast.show('⚠️ 复制失败');
-      });
+      const ok = await copyText(text);
+      Toast.show(ok ? `📋 已复制: ${text}` : '⚠️ 复制失败');
     });
 
     // —— GPS 状态条缓存 + #12 点击切换跟随模式 ——
@@ -405,15 +402,11 @@ class App {
     });
 
     // —— 点击坐标复制 ——
-    document.getElementById('info-center').addEventListener('click', function () {
+    document.getElementById('info-center').addEventListener('click', async function () {
       const text = this.textContent;
       if (!text || text === '--') return;
-      navigator.clipboard.writeText(text).then(() => {
-        const app = window.app;
-        if (app) Toast.show('✅ 已复制坐标');
-      }).catch(() => {
-        // clipboard API 可能被拒绝，降级
-      });
+      const ok = await copyText(text);
+      if (ok) Toast.show('✅ 已复制坐标');
     });
   }
 
