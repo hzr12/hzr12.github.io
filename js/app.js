@@ -337,13 +337,13 @@ class App {
       if (this._targetPos) this.mapManager.setTargetRange(v);
     });
 
-    // —— 复制我方坐标 ——
+    // —— 复制选点坐标 ——
     document.getElementById('copy-mypos-btn').addEventListener('click', async () => {
-      if (!this.myPosition) {
-        Toast.show('⚠️ 尚无定位，请先定位');
+      if (!this.center) {
+        Toast.show('⚠️ 尚无选点，请先点击地图选点');
         return;
       }
-      const text = `${this.myPosition.lat.toFixed(6)}, ${this.myPosition.lng.toFixed(6)}`;
+      const text = `${this.center.lat.toFixed(6)}, ${this.center.lng.toFixed(6)}`;
       const ok = await copyText(text);
       Toast.show(ok ? `📋 已复制: ${text}` : '⚠️ 复制失败');
     });
