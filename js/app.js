@@ -41,7 +41,6 @@ class App {
     this._visibilityHandler = null;   // visibilitychange 处理器引用
     this._pageHideHandler = null;     // pagehide 处理器引用
     this._pageShowHandler = null;     // pageshow 处理器引用
-    this._multiplayerClient = null;   // 联机客户端
     this._lastSpeed = null;           // 上次速度（m/s）
     this._lastAltitude = null;        // 上次海拔（米）
     this._batteryLevel = null;        // 电池电量（0-1）
@@ -356,9 +355,6 @@ class App {
     this._statusEl = document.getElementById('gps-status');
     this._statusEl.addEventListener('click', () => this._toggleFollowMode());
     this._statusEl.style.cursor = 'pointer';
-
-    // —— 联机配对 ——
-    this._initMultiplayer();
 
     // —— GNSS 卫星显示：始终在面板最底部的独立 bar ——
     this._gnssBarEl = document.getElementById('gnss-bar');
@@ -728,10 +724,6 @@ class App {
         const elapsed = (Date.now() - this._speedTrackingStart) / 1000;
         this._speedHistory.push({ x: Math.round(elapsed * 10) / 10, y: pos.speed });
         this._updateSpeedChart();
-      }
-      // 联机位置同步
-      if (this._multiplayerClient?.connected) {
-        this._multiplayerClient.sendPosition(pos);
       }
       this._processQueue = this._processQueue
         .then(() => this._processPosition(pos))
@@ -2199,173 +2191,6 @@ class App {
     this.mapManager.destroy();
   }
 
-  /* ── 联机配对 ─────────────────────────────────────── */
-
-  _initMultiplayer() {
-    // 优先级：URL 参数 ?ws= > localStorage 缓存 > 自动检测
-    const params = new URLSearchParams(location.search);
-    const wsParam = params.get('ws');
-    const saved = localStorage.getItem('circlemap_ws_url');
-    const SERVER_URL = wsParam || saved || (
-      (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-        ? 'ws://localhost:3000'
-        : 'wss://circlemap-server.fly.dev'
-    );
-
-    const client = new MultiplayerClient(SERVER_URL);
-    this._multiplayerClient = client;
-
-    const createBtn = document.getElementById('mp-create-btn');
-    const joinBtn = document.getElementById('mp-join-btn');
-    const joinInput = document.getElementById('mp-room-input');
-    const disconnectBtn = document.getElementById('mp-disconnect-btn');
-    const copyCodeBtn = document.getElementById('mp-copy-code-btn');
-    const statusEl = document.getElementById('mp-status');
-    const joinRow = document.getElementById('mp-join-row');
-    const roomCodeRow = document.getElementById('mp-room-code');
-    const codeDisplay = document.getElementById('mp-code-display');
-    const serverInput = document.getElementById('mp-server-input');
-    const serverBtn = document.getElementById('mp-server-btn');
-
-    // 显示当前服务器地址
-    serverInput.placeholder = SERVER_URL;
-
-    // 设置自定义服务器
-    serverBtn.addEventListener('click', () => {
-      const url = serverInput.value.trim();
-      if (!url) {
-        // 清除已保存的自定义地址，恢复默认
-        localStorage.removeItem('circlemap_ws_url');
-        const defaultUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-          ? 'ws://localhost:3000'
-          : 'wss://circlemap-server.fly.dev';
-        client.disconnect();
-        client.serverUrl = defaultUrl;
-        serverInput.placeholder = defaultUrl;
-        Toast.show('🔄 已恢复默认服务器');
-        return;
-      }
-      if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
-        Toast.show('地址须以 ws:// 或 wss:// 开头'); return;
-      }
-      localStorage.setItem('circlemap_ws_url', url);
-      client.disconnect();
-      client.serverUrl = url;
-      Toast.show(`🔗 服务器已切换：${url}`);
-      serverInput.value = '';
-      serverInput.placeholder = url;
-    });
-
-    // 状态变化
-    client.onStateChange = (state) => {
-      const labels = { connecting: '连接中...', connected: '已连接', disconnected: '未连接', error: '连接失败' };
-      statusEl.textContent = labels[state] || state;
-      statusEl.classList.toggle('connected', state === 'connected');
-      // 断连或出错时重新启用按钮，允许重试
-      if (state === 'disconnected' || state === 'error') {
-        createBtn.disabled = false;
-      }
-    };
-
-    // 房间创建成功
-    client.onRoomCreated = (roomId) => {
-      joinRow.classList.add('hidden');
-      roomCodeRow.classList.remove('hidden');
-      codeDisplay.textContent = roomId;
-      statusEl.textContent = '已连接 · 等待加入';
-      Toast.show(`🏠 房间已创建：${roomId}`);
-    };
-
-    // 房间加入成功
-    client.onRoomJoined = (roomId) => {
-      joinRow.classList.add('hidden');
-      roomCodeRow.classList.remove('hidden');
-      codeDisplay.textContent = roomId;
-      statusEl.textContent = '已连接 · 对方已加入';
-      Toast.show('✅ 已加入房间，双方已连接');
-    };
-
-    // 对方加入
-    client.onPeerJoined = () => {
-      statusEl.textContent = '已连接 · 对方已加入';
-      Toast.show('🛰️ 对方已加入房间');
-    };
-
-    // 对方离开
-    client.onPeerLeft = () => {
-      statusEl.textContent = '已连接 · 等待加入';
-      Toast.show('⚠️ 对方已离开');
-      this.mapManager.clearTarget();
-    };
-
-    // 收到对方位置 → 设置目标位置
-    client.onPeerPosition = (pos) => {
-      this.mapManager.setTarget(pos.lat, pos.lng);
-      // 更新 target-info 显示
-      const infoEl = document.getElementById('target-info');
-      if (infoEl) {
-        const dist = this.myPosition
-          ? calcDistance(this.myPosition.lat, this.myPosition.lng, pos.lat, pos.lng)
-          : null;
-        infoEl.textContent = dist != null
-          ? `对方位置：${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}（距我 ${formatDistance(dist)}）`
-          : `对方位置：${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
-      }
-      // 有对方位置时显示精度范围行
-      const rangeRow = document.getElementById('target-range-row');
-      if (rangeRow) rangeRow.classList.remove('hidden');
-    };
-
-    // 收到对方标记
-    client.onTargetSet = (pos) => {
-      this.mapManager.setTarget(pos.lat, pos.lng);
-      if (pos.radius) this.mapManager.setTargetRange(pos.radius);
-    };
-
-    // 错误
-    client.onError = (msg) => {
-      Toast.show(`❌ ${msg}`);
-    };
-
-    // 创建房间
-    createBtn.addEventListener('click', () => {
-      client.createRoom();
-      createBtn.disabled = true;
-    });
-
-    // 加入房间
-    joinBtn.addEventListener('click', () => {
-      const code = joinInput.value.trim();
-      if (!code) { Toast.show('请输入房间码'); return; }
-      client.joinRoom(code);
-      joinBtn.disabled = true;
-    });
-    joinInput.addEventListener('input', () => {
-      joinBtn.disabled = !joinInput.value.trim();
-    });
-    joinInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && joinInput.value.trim()) joinBtn.click();
-    });
-
-    // 复制房间码
-    copyCodeBtn.addEventListener('click', () => {
-      const code = codeDisplay.textContent;
-      if (code) {
-        navigator.clipboard.writeText(code).then(() => Toast.show(`📋 已复制房间码: ${code}`));
-      }
-    });
-
-    // 断开连接
-    disconnectBtn.addEventListener('click', () => {
-      client.disconnect();
-      joinRow.classList.remove('hidden');
-      roomCodeRow.classList.add('hidden');
-      createBtn.disabled = false;
-      joinBtn.disabled = true;
-      joinInput.value = '';
-      this.mapManager.clearTarget();
-    });
-  }
 }
 
 /* ============= 启动 ============= */
