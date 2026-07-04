@@ -229,15 +229,12 @@ class GPSManager {
         console.warn('[GPS] startGnssListening 拒绝:', msg);
         if (code === 'PERMISSION_DENIED') {
           Toast.show(`❌ ACCESS_FINE_LOCATION 权限被拒 — 请到系统设置→应用→CircleMap→位置，开启"始终允许"`, 6000);
-        } else {
-          Toast.show(`❌ startGnssListening: ${msg}`, 5000);
         }
         throw startErr;
       }
       this._gnssListeningStarted = true;
       this._gnssInitError = null;
       console.log('[GPS] GNSS 插件已激活，卫星数据可用');
-      Toast.show('🛰️ GNSS 启动，等待卫星...');
 
       // 兜底轮询：前 15 秒每 2 秒主动拉取一次，防止事件丢失
       this._startGnssPollFallback();
@@ -270,7 +267,6 @@ class GPSManager {
       // 如果事件已收到卫星数据，提前停止轮询
       if (this._gnssSatellites.length > 0) {
         console.log('[GPS] GNSS 轮询兜底：已收到卫星数据，停止轮询');
-        Toast.show(`🛰️ 已检测到 ${this._gnssSatellites.length} 颗卫星`);
         this._stopGnssPollFallback();
         return;
       }
@@ -285,7 +281,6 @@ class GPSManager {
         if (data && data.satellites && data.satellites.length > 0) {
           this._gnssSatellites = data.satellites;
           console.log('[GPS] GNSS 轮询兜底：收到卫星数:', data.satellites.length);
-          Toast.show(`🛰️ 兜底轮询：${data.satellites.length} 颗卫星`);
           this._stopGnssPollFallback();
         }
       } catch (e) {
@@ -296,7 +291,6 @@ class GPSManager {
         if (this._gnssSatellites.length === 0 && !toastedNoData) {
           toastedNoData = true;
           console.warn('[GPS] GNSS 轮询兜底：15s 内未收到卫星数据');
-          Toast.show('[GPS] GNSS 轮询兜底：15s 内未收到卫星数据', 5000);
         }
       }
     }, interval);
