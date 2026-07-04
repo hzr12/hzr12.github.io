@@ -2202,9 +2202,15 @@ class App {
   /* ── 联机配对 ─────────────────────────────────────── */
 
   _initMultiplayer() {
-    const SERVER_URL = location.hostname === 'localhost'
-      ? 'ws://localhost:3000'
-      : 'wss://circlemap-server.fly.dev';
+    // 优先级：URL 参数 ?ws= > localStorage 缓存 > 自动检测
+    const params = new URLSearchParams(location.search);
+    const wsParam = params.get('ws');
+    const saved = localStorage.getItem('circlemap_ws_url');
+    const SERVER_URL = wsParam || saved || (
+      location.hostname === 'localhost'
+        ? 'ws://localhost:3000'
+        : 'wss://circlemap-server.fly.dev'
+    );
 
     const client = new MultiplayerClient(SERVER_URL);
     this._multiplayerClient = client;
@@ -2218,6 +2224,37 @@ class App {
     const joinRow = document.getElementById('mp-join-row');
     const roomCodeRow = document.getElementById('mp-room-code');
     const codeDisplay = document.getElementById('mp-code-display');
+    const serverInput = document.getElementById('mp-server-input');
+    const serverBtn = document.getElementById('mp-server-btn');
+
+    // 显示当前服务器地址
+    serverInput.placeholder = SERVER_URL;
+
+    // 设置自定义服务器
+    serverBtn.addEventListener('click', () => {
+      const url = serverInput.value.trim();
+      if (!url) {
+        // 清除已保存的自定义地址，恢复默认
+        localStorage.removeItem('circlemap_ws_url');
+        const defaultUrl = location.hostname === 'localhost'
+          ? 'ws://localhost:3000'
+          : 'wss://circlemap-server.fly.dev';
+        client.disconnect();
+        client.serverUrl = defaultUrl;
+        serverInput.placeholder = defaultUrl;
+        Toast.show('🔄 已恢复默认服务器');
+        return;
+      }
+      if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+        Toast.show('地址须以 ws:// 或 wss:// 开头'); return;
+      }
+      localStorage.setItem('circlemap_ws_url', url);
+      client.disconnect();
+      client.serverUrl = url;
+      Toast.show(`🔗 服务器已切换：${url}`);
+      serverInput.value = '';
+      serverInput.placeholder = url;
+    });
 
     // 状态变化
     client.onStateChange = (state) => {

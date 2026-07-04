@@ -596,6 +596,34 @@ input[type="number"] {
   padding: 0 10px 8px;
 }
 
+.mp-server-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mp-server-input {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 11px;
+  padding: 3px 8px;
+  min-width: 0;
+}
+
+.mp-server-input::placeholder {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.btn-server-set {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+
 .mp-join-row {
   display: flex;
   gap: 6px;
