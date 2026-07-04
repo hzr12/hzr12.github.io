@@ -40,6 +40,8 @@ class App {
     this._pageShowHandler = null;     // pageshow 处理器引用
     this._lastSpeed = null;           // 上次速度（m/s）
     this._lastAltitude = null;        // 上次海拔（米）
+    this._batteryLevel = null;        // 电池电量（0-1）
+    this._batteryCharging = false;    // 是否在充电
     this._lastCalcPos = null;         // 上一个连续定位位置（用于自行计算速度）
     this._lastCalcTime = null;        // 上一个连续定位时间戳
     this._lastAccuracy = null;        // 最近一次定位精度（米），用于精度圈范围判断
@@ -99,6 +101,9 @@ class App {
     this._weatherHtml = '';
     this._fetchWeather();
 
+    // 电池监控
+    this._initBattery();
+
     // 进入页面后自动启动持续 GPS 追踪
     this._startWatching();
 
@@ -108,9 +113,10 @@ class App {
         this._watchingBeforeHide = true;
         this._stopWatching();
       }
-      if (this.trail.positions.length > 0) {
-        Storage.saveTrail(this.trail); // 切后台时保存轨迹
-      }
+      // 轨迹保存已停用
+      // if (this.trail.positions.length > 0) {
+      //   Storage.saveTrail(this.trail); // 切后台时保存轨迹
+      // }
     };
     this._pageShowHandler = () => {
       if (this._watchingBeforeHide) {
@@ -146,23 +152,6 @@ class App {
 
   /* ============= UI 事件绑定 ============= */
 
-  /**
-   * 初始化所有 UI 事件监听器
-   *
-   * 事件绑定分组：
-   *   1. DOM 元素缓存 — 高频访问的元素预先缓存
-   *   2. 模式切换 — click / input 模式标签
-   *   3. 坐标输入 — 经纬度输入框 + 防抖
-   *   4. 智能粘贴 — 自动解析多种坐标格式
-   *   5. 智能解析输入框 — 粘贴/输入自动读取
-   *   6. 半径控制 — 滑块 + 数字输入 + 预设按钮
-   *   7. 绘制/清除按钮
-   *   8. 轨迹操作 — 记录/清除/导出/统计/平滑
-   *   9. 对方位置标记
-   *  10. GPS 按钮 — 短按定位 / 长按追踪
-   *  11. 面板折叠 + 主题切换
-   *  12. 圆列表事件委托
-   */
   _setupUI() {
     // —— 缓存高频 DOM 元素 ——
     this._latInput = document.getElementById('lat');
@@ -286,6 +275,16 @@ class App {
       }
     });
 
+    // —— 选点至我的位置按钮 ——
+    document.getElementById('center-to-me-btn').addEventListener('click', () => {
+      if (!this.myPosition) {
+        Toast.show('⚠️ 尚未定位，请先点击 GPS 按钮');
+        return;
+      }
+      this.mapManager.setCenter(this.myPosition);
+      Toast.show('📍 选点中心已设为我的位置');
+    });
+
     // —— #14 设为我当前位置按钮 ——
     document.getElementById('set-mypos-btn').addEventListener('click', () => {
       const lat = parseFloat(this._latInput.value);
@@ -304,12 +303,14 @@ class App {
     // —— 清除按钮 ——
     document.getElementById('clear-btn').addEventListener('click', () => this._clearAll());
 
-    // —— 轨迹记录按钮 ——
-    document.getElementById('trail-record-btn').addEventListener('click', () => this._toggleTrailRecording());
-    document.getElementById('trail-clear-btn').addEventListener('click', () => this._clearTrail());
-    document.getElementById('trail-export-btn').addEventListener('click', () => this._exportGpx());
-    document.getElementById('trail-stats-btn').addEventListener('click', () => this._showTrailStats());
-    document.getElementById('trail-smooth-btn').addEventListener('click', () => this._toggleTrailSmoothing());
+    // —— 轨迹记录按钮（已停用） ——
+    // document.getElementById('trail-record-btn').addEventListener('click', () => this._toggleTrailRecording());
+    // document.getElementById('trail-pause-btn').addEventListener('click', () => this._toggleTrailPause());
+    // document.getElementById('trail-clear-btn').addEventListener('click', () => this._clearTrail());
+    // document.getElementById('trail-export-btn').addEventListener('click', () => this._exportGpx());
+    // document.getElementById('trail-stats-btn').addEventListener('click', () => this._showTrailStats());
+    // document.getElementById('trail-smooth-btn').addEventListener('click', () => this._toggleTrailSmoothing());
+    document.getElementById('power-saving-btn').addEventListener('click', () => this._togglePowerSaving());
 
     // —— 对方位置标记（复用坐标输入区） ——
     this._targetInfoEl = document.getElementById('target-info');
@@ -351,6 +352,9 @@ class App {
     this._statusEl = document.getElementById('gps-status');
     this._statusEl.addEventListener('click', () => this._toggleFollowMode());
     this._statusEl.style.cursor = 'pointer';
+
+    // —— GNSS 卫星显示：始终在面板最底部的独立 bar ——
+    this._gnssBarEl = document.getElementById('gnss-bar');
 
     // —— GPS 按钮：短按单次定位，长按切换持续追踪 ——
     let pressTimer = null;
@@ -470,23 +474,15 @@ class App {
 
   /**
    * 智能解析粘贴文本中的经纬度
-   *
-   * 解析策略（按优先级）：
-   *   1. 方向标识模式 — 文本含 N/S/E/W，按方向匹配 lat/lng
-   *   2. 标签模式 — 文本含 "lat/lng/纬度/经度" 等标签
-   *   3. 前缀格式 — "N 39.9 E 116.4" 形式
-   *   4. 默认模式 — 取前两个数字作为 lat, lng
-   *
-   * 支持格式示例：
+   * 支持格式：
    *   "23.1291, 113.2644"         → 逗号分隔
    *   "23.1291 113.2644"           → 空格分隔
    *   "lat 23.1291 lng 113.2644"   → 带标签
    *   "纬度:23.1291 经度:113.2644" → 中文标签
    *   "39.9°N 116.4°E"             → 度分秒简写
    *   "N 39.9 E 116.4"             → 前缀格式（#8）
-   *
-   * @param {string} text 用户输入/粘贴的文本
-   * @returns {{lat:number,lng:number}|null} 解析结果，失败返回 null
+   * @param {string} text
+   * @returns {{lat:number,lng:number}|null}
    */
   _parseCoordText(text) {
     if (!text) return null;
@@ -494,7 +490,6 @@ class App {
     const nums = text.match(/-?\d+\.?\d*/g);
     if (!nums || nums.length < 2) return null;
 
-    // ── 策略 1：方向标识模式（N/S/E/W） ──
     // 判断是否带 N/S/E/W 方向标识（#8 修正重复字符）
     const hasNS = /[北n]|north/i.test(text);
     const hasEW = /[东e]|east/i.test(text);
@@ -514,7 +509,6 @@ class App {
       if (lat != null && lng != null) return { lat, lng };
     }
 
-    // ── 策略 2：标签模式（lat/lng/纬度/经度） ──
     // 检测中文/英文标签
     const hasLatLabel = /(纬度?|lat)/i.test(text);
     const hasLngLabel = /(经度?|lng|lon|long)/i.test(text);
@@ -527,7 +521,7 @@ class App {
       if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
     }
 
-    // ── 策略 3：前缀格式（"N 39.9 E 116.4" 或 "N39.9 E116.4"，#8） ──
+    // 方向前缀格式："N 39.9 E 116.4" 或 "N39.9 E116.4"（#8）
     const prefixMatch = text.match(/^[NnSs]\s*([\d.]+)\s*[EeWw]\s*([\d.]+)/);
     if (prefixMatch) {
       const lat = parseFloat(prefixMatch[1]);
@@ -535,7 +529,7 @@ class App {
       if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
     }
 
-    // ── 策略 4：默认模式 — 取前两个数字作 lat, lng ──
+    // 默认：取前两个数字作 lat, lng
     const lat = parseFloat(nums[0]);
     const lng = parseFloat(nums[1]);
     if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
@@ -691,10 +685,10 @@ class App {
 
       // 权限已确认，激活 GNSS 卫星监听
       this.gpsManager.startGnss().then(() => {
-        if (this.gpsManager.hasGnssPlugin) {
+        if (this.gpsManager.isGnssActive) {
           Toast.show(`🛰️ GNSS 卫星数据已激活`);
         }
-      }).catch(() => {});
+      }).catch(err => console.error('[GNSS] unexpected error:', err));
     } catch (err) {
       Toast.show('❌ ' + err.message);
       this._gpsBtn.classList.remove('located');
@@ -812,6 +806,21 @@ class App {
   }
 
   /**
+   * 切换轨迹暂停/继续状态
+   */
+  _toggleTrailPause() {
+    if (!this.trail.isRecording) return;
+    if (this.trail.isPaused) {
+      this.trail.resume();
+      Toast.show('▶ 轨迹记录已继续');
+    } else {
+      this.trail.pause();
+      Toast.show('⏸ 轨迹记录已暂停');
+    }
+    this._updateTrailUI();
+  }
+
+  /**
    * 导出 GPX 文件（#18 — 委托给 GpxExport 模块，含#7 schema修复）
    */
   _exportGpx() {
@@ -841,6 +850,22 @@ class App {
     }
     this._updateTrailUI();
     Toast.show(this._trailSmoothing ? '✨ 轨迹平滑已开启' : '⬜ 轨迹平滑已关闭');
+  }
+
+  /**
+   * 切换省电模式
+   */
+  _togglePowerSaving() {
+    if (this.gpsManager.isPowerSavingLocked) {
+      Toast.show('电量不足，省电模式已锁定，充电后自动解锁');
+      return;
+    }
+    const next = this.gpsManager.togglePowerSaving();
+    const btn = document.getElementById('power-saving-btn');
+    if (btn) {
+      btn.classList.toggle('active', next);
+    }
+    Toast.show(next ? '省电模式已开启（GPS 精度降低）' : '省电模式已关闭（GPS 恢复高精度）');
   }
 
   /**
@@ -971,6 +996,7 @@ class App {
    */
   _updateTrailUI() {
     const btn = document.getElementById('trail-record-btn');
+    const pauseBtn = document.getElementById('trail-pause-btn');
     const clearBtn = document.getElementById('trail-clear-btn');
     const exportBtn = document.getElementById('trail-export-btn');
     const statsBtn = document.getElementById('trail-stats-btn');
@@ -983,6 +1009,12 @@ class App {
       btn.innerHTML = this.trail.isRecording
         ? '<span class="trail-dot"></span> 记录中...'
         : '<span class="trail-dot"></span> 开始记录';
+    }
+
+    // 暂停按钮
+    if (pauseBtn) {
+      pauseBtn.disabled = !this.trail.isRecording;
+      pauseBtn.textContent = this.trail.isPaused ? '继续' : '暂停';
     }
 
     // 距离
@@ -1063,27 +1095,15 @@ class App {
 
   /**
    * 处理位置数据：GCJ-02 转换 + UI 刷新
-   *
-   * 这是持续追踪的核心处理流程，由 GPSManager 的 onPositionChange 回调触发。
-   * 通过串行队列（_processQueue）保证多条位置数据不会并发处理。
-   *
-   * 处理阶段：
-   *   1. 速度/海拔计算 — 浏览器 speed 常为 null，需要自行计算
-   *   2. 坐标转换 — WGS84 → GCJ-02
-   *   3. 状态更新 — 保存位置、更新标记、精度环
-   *   4. 首次/后续定位分支 — 首次飞地图，后续按跟随模式决定
-   *   5. 轨迹记录 — 通过 Trail 模块采样记录
-   *   6. UI 刷新 — 状态条、圆列表、距离信息
    */
   async _processPosition(pos) {
     try {
     // 跟踪原始坐标用于下次位移判断
     this._lastRawPos = {lat: pos.lat, lng: pos.lng};
 
-    // ── 阶段 1：坐标转换（WGS84 → GCJ-02） ──
     const convPos = await this.mapManager.wgs84ToGcj02(pos);
 
-    // ── 阶段 2：速度/海拔计算 ──
+    // 保存速度/海拔
     // 浏览器 speed 常为 null（尤其桌面/首次定位），用连续定位的距离/时间自行计算
     if (pos.speed != null) {
       this._lastSpeed = pos.speed;
@@ -1101,7 +1121,6 @@ class App {
     this._lastCalcTime = pos.timestamp || Date.now();
     this._lastAccuracy = pos.accuracy;
 
-    // ── 阶段 3：状态更新 ──
     // 保存定位信息
     this.myPosition = convPos;
     this.myPositionTime = Date.now();
@@ -1116,7 +1135,6 @@ class App {
     // 更新位置标记 + 精度环（#17）
     this.mapManager.setLocation(convPos, pos.accuracy, pos.heading);
 
-    // ── 阶段 4：首次/后续定位分支 ──
     if (this._firstFix) {
       this._firstFix = false;
 
@@ -1139,10 +1157,10 @@ class App {
 
         // 首次定位成功 → 权限已确认，激活 GNSS 卫星监听
         this.gpsManager.startGnss().then(() => {
-          if (this.gpsManager.hasGnssPlugin) {
+          if (this.gpsManager.isGnssActive) {
             Toast.show(`🛰️ GNSS 卫星数据已激活`);
           }
-        }).catch(() => {});
+        }).catch(err => console.error('[GNSS] unexpected error:', err));
       }
     } else if (this._isWatching) {
       // 用户手动选过中心点 → 不覆盖 center（GPS 只更新自身位置标记）
@@ -1158,26 +1176,24 @@ class App {
       }
     }
 
-    // ── 阶段 5：轨迹记录 ──
-    // 记录历史轨迹（通过 Trail 模块，#18）
-    if (this.trail.isRecording) {
-      const added = this.trail.addPoint({
-        lat: convPos.lat,
-        lng: convPos.lng,
-        wgsLat: pos.lat,
-        wgsLng: pos.lng,
-        time: pos.timestamp || Date.now(),
-        accuracy: pos.accuracy || 0,
-        speed: pos.speed,
-        heading: pos.heading
-      });
-      if (added) {
-        this.mapManager.setTrail(this._getTrailPositions());
-        this._updateTrailUI();
-      }
-    }
+    // —— 记录历史轨迹（通过 Trail 模块，#18）（已停用） ——
+    // if (this.trail.isRecording) {
+    //   const added = this.trail.addPoint({
+    //     lat: convPos.lat,
+    //     lng: convPos.lng,
+    //     wgsLat: pos.lat,
+    //     wgsLng: pos.lng,
+    //     time: pos.timestamp || Date.now(),
+    //     accuracy: pos.accuracy || 0,
+    //     speed: pos.speed,
+    //     heading: pos.heading
+    //   });
+    //   if (added) {
+    //     this.mapManager.setTrail(this._getTrailPositions());
+    //     this._updateTrailUI();
+    //   }
+    // }
 
-    // ── 阶段 6：UI 刷新 ──
     // 位移 >N 米才重建圆列表（省性能）
     if (!this._lastDistPos || calcDistance(convPos, this._lastDistPos) > CONFIG.MIN_DISPLACEMENT_M) {
       this._lastDistPos = convPos;
@@ -1414,8 +1430,8 @@ class App {
    * 保存状态到 localStorage（circles + 设置）（#18 委托给 Storage 模块）
    */
   _saveState() {
-    // 轨迹定期保存（始终写入，空数组可清除 localStorage 旧数据）
-    Storage.saveTrail(this.trail);
+    // 轨迹定期保存已停用
+    // Storage.saveTrail(this.trail);
     if (!this._dirty) return;
     this._dirty = false;
     Storage.saveCircles(this.mapManager, this.circleRadius, this.center);
@@ -1460,37 +1476,29 @@ class App {
       }
     }
 
-    // 恢复轨迹数据（独立于 circles，保证有轨迹时总能恢复）
-    const trailData = Storage.loadTrail();
-    if (trailData && Array.isArray(trailData.positions) && trailData.positions.length > 0) {
-      this.trail.positions = trailData.positions;
-      this.trail.lastPos = trailData.positions[trailData.positions.length - 1];
-      this._updateTrailUI();
-      if (trailData.positions.length >= 2) {
-        this.mapManager.setTrail(this._getTrailPositions());
-      }
-    }
+    // 恢复轨迹数据已停用
+    // const trailData = Storage.loadTrail();
+    // if (trailData && Array.isArray(trailData.positions) && trailData.positions.length > 0) {
+    //   this.trail.positions = trailData.positions;
+    //   this.trail.lastPos = trailData.positions[trailData.positions.length - 1];
+    //   this._updateTrailUI();
+    //   if (trailData.positions.length >= 2) {
+    //     this.mapManager.setTrail(this._getTrailPositions());
+    //   }
+    // }
   }
 
   /* ============= 状态 & 信息更新 ============= */
 
   /**
    * 更新顶部 GPS 状态条
-   *
-   * 状态条布局（3 行）：
-   *   第 1 行：定位状态（在线/追踪/过期/手动/降级）+ 经过时间
-   *   第 2 行：信号强度 + GNSS 卫星 + 速度 + 海拔 + 最近圆距离
-   *   第 3 行：天气信息
-   *
-   * 信号强度分级（基于 GPS 精度）：
-   *   ≤10m → 4 格极好 / ≤30m → 3 格良好 / ≤100m → 2 格一般 / >100m → 1 格弱
-   *
-   * @param {boolean} [force=false] 强制刷新（跳过节流）
    */
   _updateStatusBar(force) {
     if (!this._statusEl) return;
     if (!this.myPosition) {
       this._statusEl.innerHTML = '<div class="gps-line1"><span class="gps-dot"></span><span class="gps-offline">⊙ 未定位，点击 GPS 按钮定位</span></div>';
+      // 未定位时清空底部卫星 bar，避免上一次 '等待卫星...' 残留
+      if (this._gnssBarEl) this._gnssBarEl.innerHTML = '';
       return;
     }
     // 节流：不强制刷新时跳过高频调用
@@ -1528,14 +1536,12 @@ class App {
     } else {
       dotClass = 'gps-dot online';
     }
-    // ── 第 1 行：定位状态 + 经过时间 ──
     const watchingIcon = isTracking ? ' <span class="gps-tracking">◉</span>' : '';
     const staleIcon = stale ? ' <span class="gps-stale">⚠️ 已过期</span>' : '';
     const followIcon = this._followMode ? ' <span class="gps-follow">📌 跟随中</span>' : ''; // #12
     const manualIcon = isManual ? ' <span class="gps-manual">📍 手动定位</span>' : ''; // #15
     const degradedIcon = isDowngraded ? ' <span class="gps-degraded">⚡ 低精度</span>' : '';
 
-    // ── GNSS 卫星数据（仅 Capacitor 原生端可用） ──
     // GNSS 卫星数据（仅 Capacitor 原生端可用），始终渲染
     let gnssHtml = '';
     if (this.gpsManager.hasGnssPlugin) {
@@ -1554,7 +1560,6 @@ class App {
       }
     }
 
-    // ── 第 2 行：信号 + 卫星 + 速度 + 海拔 + 最近圆 ──
     // 信号强度（基于 GPS 精度）
     let signalHtml = '';
     if (this._lastAccuracy != null) {
@@ -1571,10 +1576,9 @@ class App {
         `</span>`;
     }
 
-    // 第二行：信号 + 卫星 + 速度 + 海拔 + 最近圆
+    // 第二行：信号 + 速度 + 海拔 + 最近圆（GNSS 数据已移到底部独立 gnss-bar 不再放这行）
     const line2Parts = [];
     if (signalHtml) line2Parts.push(signalHtml);
-    if (gnssHtml) line2Parts.push(gnssHtml);
     if (this._lastSpeed != null) {
       const kmh = this._lastSpeed * 3.6;
       line2Parts.push(`<span class="gps-speed">${kmh.toFixed(1)}km/h</span>`);
@@ -1582,16 +1586,27 @@ class App {
     if (this._lastAltitude != null) {
       line2Parts.push(`<span class="gps-altitude">${Math.round(this._lastAltitude)}m</span>`);
     }
+    if (this._batteryLevel != null) {
+      const pct = Math.round(this._batteryLevel * 100);
+      const timeStr = this._getBatteryTimeStr();
+      const label = this._batteryCharging ? '充电中' : (timeStr ? `约${timeStr}` : '');
+      line2Parts.push(`<span class="gps-battery" title="电量 ${pct}%">${pct}%${label ? ' ' + label : ''}</span>`);
+    }
     if (nearStr) line2Parts.push(nearStr);
     const line2 = line2Parts.length ? line2Parts.join(' ｜ ') : '<span style="opacity:0.5">位置待更新</span>';
 
-    // ── 第 3 行：天气 ──
+    // 第三行：天气
     const line3 = this._weatherHtml ? `<div class="gps-line2">${this._weatherHtml}</div>` : '';
 
     this._statusEl.innerHTML =
       `<div class="gps-line1"><span class="${dotClass}"></span><span class="gps-online">${isManual ? '📍' : '◉'} 已定位</span>${degradedIcon}${manualIcon}${watchingIcon}${followIcon} <span class="gps-elapsed">(${elapsed})</span>${staleIcon}</div>` +
       `<div class="gps-line2">${line2}</div>` +
       line3;
+
+    // 底部卫星 bar：独立渲染
+    if (this._gnssBarEl) {
+      this._gnssBarEl.innerHTML = gnssHtml || '';
+    }
   }
 
   /**
@@ -1653,7 +1668,7 @@ class App {
    * 免费、无需 API key、原生 CORS
    */
   _fetchWeatherOpenMeteo(lat, lng) {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
     return fetch(url, { signal: AbortSignal.timeout(5000) })
       .then(r => r.json())
       .then(data => {
@@ -1665,7 +1680,15 @@ class App {
         const code = cur.weather_code;
         const desc = App._weatherCodeToZh(code);
         const humidityText = humidity != null ? ` 湿度${humidity}%` : '';
-        this._weatherHtml = `<span class="gps-weather" title="湿度 ${humidity}%">🌡${temp}°C 💨${wind}km/h${humidityText}${desc ? ' ' + desc : ''}</span>`;
+        // 日出日落
+        let sunText = '';
+        const daily = data.daily;
+        if (daily?.sunrise?.[0] && daily?.sunset?.[0]) {
+          const sunrise = daily.sunrise[0].slice(11);
+          const sunset = daily.sunset[0].slice(11);
+          sunText = ` 日出${sunrise} 日落${sunset}`;
+        }
+        this._weatherHtml = `<span class="gps-weather" title="湿度 ${humidity}%">🌡${temp}°C 💨${wind}km/h${humidityText}${desc ? ' ' + desc : ''}${sunText}</span>`;
         this._updateStatusBar(true);
       });
   }
@@ -1675,8 +1698,8 @@ class App {
    */
   _fetchWeatherWttr(lat, lng) {
     const url = (lat && lng)
-      ? `https://wttr.in/${lat},${lng}?format=j1`
-      : 'https://wttr.in/?format=j1';
+      ? `https://wttr.in/${lat},${lng}?format=j1&lang=zh`
+      : 'https://wttr.in/?format=j1&lang=zh';
     return fetch(url, { signal: AbortSignal.timeout(8000) })
       .then(r => r.json())
       .then(data => {
@@ -1691,6 +1714,76 @@ class App {
         this._updateStatusBar(true);
       })
       .catch(() => {});
+  }
+
+  /**
+   * 初始化电池监控
+   */
+  _initBattery() {
+    if (!navigator.getBattery) return;
+    navigator.getBattery().then(battery => {
+      this._batteryLevel = battery.level;
+      this._batteryCharging = battery.charging;
+      this._batteryTime = battery.dischargingTime; // 剩余时间（秒），Infinity 表示充电中
+      this._updateStatusBar(true);
+
+      // 记录电量变化时间点，用于计算消耗速率
+      this._batteryLastLevel = battery.level;
+      this._batteryLastTime = Date.now();
+
+      battery.addEventListener('levelchange', () => {
+        const now = Date.now();
+        const dt = (now - this._batteryLastTime) / 1000; // 秒
+        const dl = this._batteryLastLevel - battery.level;
+        if (dt > 60 && dl > 0) {
+          // 超过 1 分钟且有消耗，计算速率
+          this._batteryConsumeRate = dl / dt; // 每秒消耗比例
+        }
+        this._batteryLastLevel = battery.level;
+        this._batteryLastTime = now;
+        this._batteryLevel = battery.level;
+        this._batteryCharging = battery.charging;
+        this._batteryTime = battery.dischargingTime;
+        this._updateStatusBar(true);
+        // 低电量警告
+        if (battery.level <= 0.15 && !battery.charging) {
+          Toast.show('电量不足 15%，建议开启省电模式');
+        }
+      });
+
+      battery.addEventListener('chargingchange', () => {
+        this._batteryCharging = battery.charging;
+        this._batteryTime = battery.dischargingTime;
+        this._updateStatusBar(true);
+      });
+
+      battery.addEventListener('dischargingtimechange', () => {
+        this._batteryTime = battery.dischargingTime;
+        this._updateStatusBar(true);
+      });
+    }).catch(() => {});
+  }
+
+  /**
+   * 获取格式化的电池续航时间
+   * @returns {string|null}
+   */
+  _getBatteryTimeStr() {
+    if (this._batteryCharging) return null;
+    // 优先用浏览器 API
+    if (this._batteryTime && isFinite(this._batteryTime) && this._batteryTime > 0) {
+      const h = Math.floor(this._batteryTime / 3600);
+      const m = Math.floor((this._batteryTime % 3600) / 60);
+      return h > 0 ? `${h}h${m}m` : `${m}m`;
+    }
+    // 降级：用消耗速率估算
+    if (this._batteryConsumeRate && this._batteryConsumeRate > 0 && this._batteryLevel != null) {
+      const remainSec = this._batteryLevel / this._batteryConsumeRate;
+      const h = Math.floor(remainSec / 3600);
+      const m = Math.floor((remainSec % 3600) / 60);
+      return h > 0 ? `~${h}h${m}m` : `~${m}m`;
+    }
+    return null;
   }
 
   /**
@@ -1951,6 +2044,7 @@ class App {
    * 销毁应用，清理所有定时器和事件监听器
    */
   destroy() {
+    this.gpsManager.destroy(); // 停止 GPS + GNSS + 电池监控
     if (this._intervalId) {
       clearInterval(this._intervalId);
       this._intervalId = null;

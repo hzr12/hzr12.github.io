@@ -31,7 +31,7 @@ const CONFIG = {
   // GPS 超时时间（毫秒）
   GPS_TIMEOUT: 10000,
   GPS_WATCH_TIMEOUT: 5000,               // 持续追踪超时（毫秒）
-  GPS_LOW_ACCURACY_TIMEOUT: 5000,        // 降级后 GPS 超时（毫秒）
+  GPS_LOW_ACCURACY_TIMEOUT: 15000,       // 降级后 GPS 超时（毫秒）— 更宽松以适应弱信号
 
   // GPS 超时降级
   GPS_TIMEOUT_MAX_FAILURES: 5,            // 连续超时次数阈值，超过则降级

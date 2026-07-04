@@ -347,10 +347,10 @@ input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  /* 原本 white-space:nowrap + overflow:hidden + text-overflow:ellipsis,会让信号/satellite/电量等长串截断
+     现在允许自然换行：窄屏第二行内容会折成 2-3 行，全部可见 */
   max-width: 100%;
   font-size: 10px;
   font-family: var(--font-sans);
@@ -460,11 +460,43 @@ input[type="number"] {
 .gnss-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 2px 4px;
   font-size: 11px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
   vertical-align: middle;
+  white-space: nowrap; /* 保持每一行小块不拆字 */
+}
+
+/* 底部独立卫星 bar：与上方 panel-body 用分割条隔开 */
+.gnss-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 8px 12px 10px;
+  margin: 6px 12px 8px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  min-height: 18px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.gnss-bar:empty {
+  display: none; /* 没有原生 GNSS 插件时（web/ios）整条 bar 隐藏 */
+}
+
+.gnss-bar .gnss-indicator {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
 }
 
 .gps-tracking {
@@ -748,7 +780,7 @@ input[type="number"] {
   display: flex;
   gap: 5px;
   margin-top: 6px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 .btn-setpos {
   display: flex;

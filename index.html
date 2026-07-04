@@ -100,6 +100,10 @@
           </div>
         </div>
         <div class="parse-actions">
+          <button id="center-to-me-btn" class="btn-setpos" title="将选点中心设为我的位置">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            选点至我的位置
+          </button>
           <button id="set-mypos-btn" class="btn-setpos">
             <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             设为我的位置
@@ -171,8 +175,8 @@
         </button>
       </div>
 
-      <!-- 轨迹记录 -->
-      <div class="trail-section">
+      <!-- 轨迹记录（已停用） -->
+      <div class="trail-section" style="display:none">
         <div class="trail-header">
           <span class="field-label">轨迹记录</span>
           <span class="trail-distance" id="trail-distance">0m</span>
@@ -181,12 +185,14 @@
           <button id="trail-record-btn" class="btn btn-trail">
             <span class="trail-dot"></span> 开始记录
           </button>
+          <button id="trail-pause-btn" class="btn btn-secondary btn-sm" disabled>暂停</button>
           <button id="trail-clear-btn" class="btn btn-secondary btn-sm" disabled>清除</button>
           <button id="trail-export-btn" class="btn btn-secondary btn-sm" disabled>GPX</button>
         </div>
         <div class="trail-actions">
           <button id="trail-stats-btn" class="btn-sm" disabled>📊 统计</button>
           <button id="trail-smooth-btn" class="btn-sm active">✨ 平滑</button>
+          <button id="power-saving-btn" class="btn-sm" title="省电模式：降低 GPS 精度以节省电量">省电</button>
         </div>
         <!-- 速度色阶图例 -->
         <div class="speed-legend">
@@ -244,6 +250,9 @@
           </div>
         </div>
       </div>
+
+      <!-- GNSS 卫星数据 bar：永远显示在面板最底部 -->
+      <div id="gnss-bar" class="gnss-bar"></div>
     </div>
   </div>
 
@@ -257,7 +266,7 @@
   <script src="js/trail.js?t=20260703v22"></script>
   <script src="js/gpx.js?t=20260703v22"></script>
   <script src="js/map.js?t=20260703v22"></script>
-  <script src="js/gps.js?t=20260703v22"></script>
-  <script src="js/app.js?t=20260703v22"></script>
+  <script src="js/gps.js?t=20260703v25"></script>
+  <script src="js/app.js?t=20260703v23"></script>
 </body>
 </html>

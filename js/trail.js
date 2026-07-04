@@ -9,6 +9,7 @@ class Trail {
     this.positions = [];      // 轨迹点数组
     this.lastPos = null;      // 上次记录的位置（用于采样）
     this.isRecording = false; // 是否正在记录
+    this.isPaused = false;    // 是否暂停记录
   }
 
   /**
@@ -18,6 +19,7 @@ class Trail {
     this.positions = [];
     this.lastPos = null;
     this.isRecording = true;
+    this.isPaused = false;
   }
 
   /**
@@ -25,6 +27,21 @@ class Trail {
    */
   stop() {
     this.isRecording = false;
+    this.isPaused = false;
+  }
+
+  /**
+   * 暂停记录（保留已有轨迹，暂停添加新点）
+   */
+  pause() {
+    this.isPaused = true;
+  }
+
+  /**
+   * 继续记录
+   */
+  resume() {
+    this.isPaused = false;
   }
 
   /**
@@ -43,6 +60,8 @@ class Trail {
    */
   addPoint(pt) {
     if (!pt) return false;
+    // 暂停时不添加点
+    if (this.isPaused) return false;
     // 防御：拒绝无效坐标
     if (typeof pt.lat !== 'number' || !isFinite(pt.lat) ||
         typeof pt.lng !== 'number' || !isFinite(pt.lng)) {

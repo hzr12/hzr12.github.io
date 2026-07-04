@@ -135,44 +135,27 @@ class MapManager {
 
   /* ================================================================
    *  坐标 → 像素 转换
-   *
-   *  腾讯地图使用 Web Mercator（墨卡托）投影：
-   *    地球 → 正方形平面 → 256×256 瓦片网格
-   *
-   *  fromLatLngToPoint() 将经纬度转为"世界像素坐标"（连续值），
-   *  再通过与地图中心点的世界坐标做差、乘以缩放因子，得到容器内的像素位置。
    * ================================================================ */
 
   /**
    * 经纬度 → 容器像素坐标
-   *
-   * 计算流程：
-   *   1. 通过地图投影将目标点和中心点都转为世界像素坐标
-   *   2. 计算两点的世界坐标差值
-   *   3. 乘以 2^zoom 缩放因子，再加上容器中心偏移量
-   *
-   * @param {qq.maps.LatLng} latLng 目标经纬度
-   * @returns {{x:number, y:number}|null} 容器内像素坐标，或 null
+   * 使用地图投影计算世界坐标，再根据缩放/中心点换算
    */
   _latLngToContainerPoint(latLng) {
     const proj = this.map.getProjection();
     if (!proj || !this._syncCenter) return null;
 
-    // 目标点 → 世界像素坐标（Mercator 投影后的连续坐标）
     const wp = proj.fromLatLngToPoint(latLng);
     if (!wp || typeof wp.x !== 'number') return null;
 
     const zoom = this.map.getZoom();
-    // 地图中心点 → 世界像素坐标
     const cwp = proj.fromLatLngToPoint(this._syncCenter);
     if (!cwp) return null;
 
     const w = this.canvas.parentElement.offsetWidth;
     const h = this.canvas.parentElement.offsetHeight;
-    // Web Mercator 缩放因子：zoom 每 +1，像素坐标 ×2
     const scale = Math.pow(2, zoom);
 
-    // 坐标差 × 缩放 + 容器中心偏移 = 容器内像素位置
     return {
       x: w / 2 + (wp.x - cwp.x) * scale,
       y: h / 2 + (wp.y - cwp.y) * scale
@@ -181,21 +164,12 @@ class MapManager {
 
   /**
    * 地面距离（米）→ 屏幕像素
-   *
-   * Web Mercator 投影下，每个像素代表的地面距离随纬度变化：
-   *   metersPerPx = 156543.03392 × cos(lat) / 2^zoom
-   *
-   * 其中 156543.03392 ≈ 地球周长 / 256（赤道处 zoom=0 时每像素的米数）
-   *
-   * @param {number} meters 地面距离（米）
-   * @param {qq.maps.LatLng} latLng 参考纬度（影响 cos 值）
-   * @returns {number} 对应的屏幕像素数
+   * 公式：1px = 156543.03392 * cos(lat) / 2^zoom （米）
    */
   _metersToPixels(meters, latLng) {
     if (meters <= 0) return 0;
     const zoom = this.map.getZoom();
     const lat = latLng.getLat();
-    // 每像素的地面距离（米），纬度越高 cos(lat) 越小，每像素代表的距离越短
     const mpp = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
     return meters / mpp;
   }
@@ -217,16 +191,6 @@ class MapManager {
 
   /* ================================================================
    *  同心圆渲染（核心 — 样式匹配 demo.html）
-   *
-   *  渲染管线：
-   *    _scheduleRedraw() → RAF 节流（30fps）→ _redraw()
-   *    _redraw() 分两阶段：
-   *      Pass 1（离屏 Canvas）：所有圆的填充层 → 合成到主 Canvas
-   *      Pass 2（主 Canvas）：所有圆的描边层 + 圆心标记
-   *
-   *  两阶段设计的好处：
-   *    - 填充层用离屏 Canvas 叠加，重叠区域自然加深颜色
-   *    - 描边层在主 Canvas 上绘制，避免半透明描边叠加导致变色
    * ================================================================ */
 
   _scheduleRedraw() {
@@ -266,16 +230,6 @@ class MapManager {
 
   /**
    * 离屏 Canvas（多圆重叠染色用，懒创建）
-   *
-   * 为什么需要离屏 Canvas：
-   *   多个圆的填充区域如果直接在主 Canvas 上叠加，
-   *   半透明填充会逐层叠加颜色，重叠区域自然比单个圆深。
-   *   离屏 Canvas 完成叠加后，一次性合成到主 Canvas，
-   *   控制整体透明度。
-   *
-   * @param {number} w 逻辑宽度（CSS 像素）
-   * @param {number} h 逻辑高度（CSS 像素）
-   * @returns {HTMLCanvasElement} 离屏 Canvas
    */
   _getOffscreen(w, h) {
     const dpr = window.devicePixelRatio || 1;
@@ -351,19 +305,7 @@ class MapManager {
 
   /**
    * 只画圆的填充区域（离屏 Canvas 用）
-   *
-   * 填充策略：
-   *   1. 先用基础色画一个完整的圆（最底层）
-   *   2. 从外到内画间隔环 —— 偶数圈用交替色加深
-   *   3. 因为半透明叠加，多圆重叠区域颜色自然更深
-   *
-   * 圆环参数：
-   *   maxRadius — 最外圈半径（米）
-   *   interval  — 圈间距（默认 2500m），决定环的数量
-   *   mp/ip     — 分别是 maxRadius 和 interval 对应的像素半径
-   *
-   * @param {CanvasRenderingContext2D} ctx 离屏 Canvas 上下文
-   * @param {{id:number, center:{lat:number,lng:number}, maxRadius:number, interval:number}} circle
+   * 重叠区域因为多次 fill 叠加，颜色自然比单个圆深
    */
   _drawCircleFill(ctx, circle) {
     const latLng = new qq.maps.LatLng(circle.center.lat, circle.center.lng);
@@ -406,17 +348,6 @@ class MapManager {
 
   /**
    * 画圆的描边 + 圆心标记（主 Canvas 用）
-   *
-   * 绘制内容（从下到上）：
-   *   1. 内部圈描边 —— 细线，区分每圈的边界
-   *   2. 最外圈描边 —— 粗线，强调圆的整体范围
-   *   3. 选中态虚线外框 —— 仅选中的圆显示
-   *   4. 圆心标记 —— 小圆点，选中态更大更亮
-   *   5. 距离标注 —— 对方距离 + 我方距离（圆心下方）
-   *   6. 半径标注 —— 圆圈半径（右上角）
-   *
-   * @param {CanvasRenderingContext2D} ctx 主 Canvas 上下文
-   * @param {{id:number, center:{lat:number,lng:number}, maxRadius:number, interval:number}} circle
    */
   _drawCircleStrokes(ctx, circle) {
     const isSel = circle.id === this.selectedCircleId;
@@ -732,39 +663,18 @@ class MapManager {
 
   /**
    * 手写 WGS84 → GCJ-02 纠偏算法（降级备用）
-   *
-   * 中国国家测绘局要求 GPS 坐标（WGS-84）必须经过非线性偏移
-   * 才能在公开地图上显示正确位置。该偏移算法参数未公开，
-   * 此处使用社区逆向工程得到的近似公式。
-   *
-   * 算法流程：
-   *   1. 判断是否在中国境内 — 中国境外不做偏移
-   *   2. 以 (lng-105, lat-35) 为输入，计算经纬度方向的偏移量
-   *   3. 利用椭球体参数将偏移量从"度"换算为实际地面距离
-   *   4. 叠加到原始坐标
-   *
-   * 椭球体参数（克拉索夫斯基椭球）：
-   *   A  = 6378245.0        — 长半轴（米）
-   *   EE = 0.0066934216...  — 偏心率平方
-   *
-   * @param {{lat:number, lng:number}} point WGS-84 坐标
-   * @returns {{lat:number, lng:number}} GCJ-02 坐标
+   * @param {{lat:number, lng:number}} point
+   * @returns {{lat:number, lng:number}}
    */
   _wgs84Gcj02(point) {
-    // 克拉索夫斯基椭球参数
-    const A = 6378245.0;           // 长半轴（米）
-    const EE = 0.00669342162296594323; // 第一偏心率平方
+    const A = 6378245.0;
+    const EE = 0.00669342162296594323;
 
-    // 中国范围边界检查（经纬度大致范围）
     const outOfChina = (lat, lng) =>
       lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
 
-    // 经纬度偏移量计算 — 用多项式 + 正弦波拟合非线性偏移场
-    // 输入 (x, y) 是相对于 (105°E, 35°N) 的偏移
     const transformLat = (x, y) => {
-      // 多项式基础项
       let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-      // 正弦波修正项（模拟区域差异）
       ret += (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3;
       ret += (20 * Math.sin(y * Math.PI) + 40 * Math.sin(y / 3 * Math.PI)) * 2 / 3;
       ret += (160 * Math.sin(y / 12 * Math.PI) + 320 * Math.sin(y * Math.PI / 30)) * 2 / 3;
@@ -780,22 +690,15 @@ class MapManager {
     };
 
     const { lat, lng } = point;
-    // 中国境外坐标不偏移
     if (outOfChina(lat, lng)) return point;
 
-    // ── 步骤 1：计算偏移量（单位：近似"度"的缩放值） ──
     const dlat = transformLat(lng - 105, lat - 35);
     const dlng = transformLng(lng - 105, lat - 35);
-
-    // ── 步骤 2：将偏移量从"度"换算为真实地面距离对应的度数 ──
-    // 利用椭球体子午圈曲率半径和卯酉圈曲率半径做投影变换
     const radLat = lat / 180 * Math.PI;
     let magic = Math.sin(radLat);
-    magic = 1 - EE * magic * magic;                // (1 - e²·sin²φ)
+    magic = 1 - EE * magic * magic;
     const sqrtMagic = Math.sqrt(magic);
-    // 纬度偏移：经子午圈曲率半径 M 换算
     const dlatFinal = (dlat * 180) / ((A * (1 - EE)) / (magic * sqrtMagic) * Math.PI);
-    // 经度偏移：经卯酉圈曲率半径 N 换算
     const dlngFinal = (dlng * 180) / (A / sqrtMagic * Math.cos(radLat) * Math.PI);
 
     return { lat: lat + dlatFinal, lng: lng + dlngFinal };
