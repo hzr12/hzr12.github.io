@@ -253,11 +253,28 @@
 
       <!-- GNSS 卫星数据 bar：永远显示在面板最底部 -->
       <div id="gnss-bar" class="gnss-bar"></div>
+
+      <!-- 速度曲线面板 -->
+      <div id="speed-chart-section" class="speed-chart-section hidden">
+        <div class="speed-chart-header">
+          <span class="speed-chart-title">速度曲线</span>
+          <span class="speed-chart-info" id="speed-chart-info"></span>
+          <button id="speed-chart-toggle" class="speed-chart-toggle" title="展开/收起">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <div class="speed-chart-body" id="speed-chart-body">
+          <canvas id="speed-chart-canvas"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Tencent Map API -->
   <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77&libraries=geometry,convertor"></script>
+
+  <!-- Chart.js（速度曲线） -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
   <!-- 应用脚本 -->
   <script src="js/config.js?t=20260703v22"></script>
@@ -267,6 +284,6 @@
   <script src="js/gpx.js?t=20260703v22"></script>
   <script src="js/map.js?t=20260703v22"></script>
   <script src="js/gps.js?t=20260703v25"></script>
-  <script src="js/app.js?t=20260704v24"></script>
+  <script src="js/app.js?t=20260704v25"></script>
 </body>
 </html>

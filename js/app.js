@@ -27,6 +27,9 @@ class App {
     this._watchingBeforeHide = false; // 切后台前是否在追踪
     this._restoringView = false;      // 从后台恢复时不飞地图
     this._recentFixes = [];           // 最近定位记录（最多 10 条）
+    this._speedHistory = [];          // 速度历史 [{x: 秒, y: m/s}]
+    this._speedChart = null;          // Chart.js 实例
+    this._speedTrackingStart = 0;     // 追踪开始时间戳
     this._lastRecordedFix = null;     // 上次记录的定位
     this.trail = new Trail();         // #18 轨迹管理独立模块
     this._followMode = false;         // #12 地图跟随模式
@@ -708,11 +711,20 @@ class App {
     this._isWatching = true;
     this._firstFix = true;
     this._manualCenter = false; // 重新开启 GPS 追踪 → 取消手动锁定
+    this._speedTrackingStart = Date.now();
+    this._speedHistory = [];
+    this._showSpeedChart();
 
     this._gpsBtn.classList.add('watching');
     this._gpsBtn.title = '正在持续追踪位置';
 
     this.gpsManager.onPositionChange = (pos) => {
+      // 速度数据采集
+      if (this._isWatching && pos.speed != null) {
+        const elapsed = (Date.now() - this._speedTrackingStart) / 1000;
+        this._speedHistory.push({ x: Math.round(elapsed * 10) / 10, y: pos.speed });
+        this._updateSpeedChart();
+      }
       this._processQueue = this._processQueue
         .then(() => this._processPosition(pos))
         .catch(() => {}); // 防止队列断裂
@@ -747,11 +759,100 @@ class App {
 
     this.gpsManager.stopWatching();
     this._prevDistances = {};
+    this._hideSpeedChart();
 
     this._gpsBtn.classList.remove('watching');
     this._gpsBtn.title = '定位到我的位置';
 
     Toast.show('⏹ 持续追踪已关闭');
+  }
+
+  /* ── 速度曲线 ─────────────────────────────────────── */
+
+  _showSpeedChart() {
+    const section = document.getElementById('speed-chart-section');
+    if (!section) return;
+    section.classList.remove('hidden');
+    this._initSpeedChart();
+    // 绑定折叠/展开
+    const header = section.querySelector('.speed-chart-header');
+    const body = document.getElementById('speed-chart-body');
+    const toggle = document.getElementById('speed-chart-toggle');
+    if (header && body && toggle) {
+      header.onclick = () => {
+        body.classList.toggle('collapsed');
+        toggle.classList.toggle('collapsed');
+      };
+    }
+  }
+
+  _hideSpeedChart() {
+    const section = document.getElementById('speed-chart-section');
+    if (section) section.classList.add('hidden');
+    if (this._speedChart) {
+      this._speedChart.destroy();
+      this._speedChart = null;
+    }
+  }
+
+  _initSpeedChart() {
+    if (this._speedChart) return;
+    const canvas = document.getElementById('speed-chart-canvas');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+    const textColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+    this._speedChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        datasets: [{
+          data: [],
+          borderColor: '#4fc3f7',
+          backgroundColor: 'rgba(79,195,247,0.15)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: '时间(秒)', color: textColor, font: { size: 10 } },
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 6 }
+          },
+          y: {
+            title: { display: true, text: '速度(m/s)', color: textColor, font: { size: 10 } },
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 5 },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  _updateSpeedChart() {
+    if (!this._speedChart) return;
+    const data = this._speedChart.data.datasets[0].data;
+    const last = this._speedHistory[this._speedHistory.length - 1];
+    data.push(last);
+    // 保留最近 120 个点
+    if (data.length > 120) data.shift();
+    this._speedChart.update('none');
+    // 更新信息文字
+    const infoEl = document.getElementById('speed-chart-info');
+    if (infoEl && last) {
+      const avg = this._speedHistory.reduce((s, p) => s + p.y, 0) / this._speedHistory.length;
+      const max = Math.max(...this._speedHistory.map(p => p.y));
+      infoEl.textContent = `当前 ${last.y.toFixed(1)} 平均 ${avg.toFixed(1)} 最高 ${max.toFixed(1)} m/s`;
+    }
   }
 
   /**

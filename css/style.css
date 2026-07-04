@@ -499,6 +499,73 @@ input[type="number"] {
   background: var(--bg-input);
 }
 
+/* ---------- 速度曲线面板 ---------- */
+
+.speed-chart-section {
+  margin: 6px 12px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.speed-chart-section.hidden {
+  display: none;
+}
+
+.speed-chart-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.speed-chart-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.speed-chart-info {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  flex: 1;
+  text-align: right;
+}
+
+.speed-chart-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 2px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.speed-chart-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+.speed-chart-body {
+  height: 120px;
+  padding: 0 8px 6px;
+  transition: height 0.2s;
+  overflow: hidden;
+}
+
+.speed-chart-body.collapsed {
+  height: 0;
+  padding: 0 8px;
+}
+
+.speed-chart-body canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .gps-tracking {
   color: var(--accent-1);
   animation: trackingBlink 1.5s ease-in-out infinite;
